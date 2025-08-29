@@ -802,7 +802,6 @@ from old_dep.bati_soumis_temp3;
 --- Enrichissement (facultatif) de la table ---
 
 update old_dep.obligations_bati_multi
-set nb_obl = 1,
 surface_m2 = st_area(geom);
 
 Update old_dep.obligations_bati_multi as a
