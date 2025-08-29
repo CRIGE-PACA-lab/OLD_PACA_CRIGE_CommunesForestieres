@@ -535,7 +535,7 @@ a.obl_comptcom as obl_comptcom,
 a.obl_nom as obl_nom,
   ST_CollectionExtract(  st_union(st_buffer(a.geom,50)),3) as geom
 from old_dep.bati  as a, old_dep.com as b  
-where id_zonage IS NOT NULL and st_intersects(a.geom,b.geom) and b.code_insee = '04112'
+where id_zonage IS NOT NULL and st_intersects(a.geom,b.geom) and b.code_insee = <code_insee>
 group by obl_comptcom, obl_nom;
 
 CREATE INDEX ON old_dep.bati_soumis_temp USING GIST (geom);
@@ -547,7 +547,7 @@ Create table old_dep.plu_com as
 select a.type_zone,
 st_Union(a.geom) as geom
 from old_dep.plu_corr_fin as a, old_dep.com as b 
-where st_intersects(a.geom,b.geom) and b.code_insee = '04112'
+where st_intersects(a.geom,b.geom) and b.code_insee = <code_insee>
 group by a.type_zone;
 
 Drop table if exists old_dep.bati_soumis_temp1 ;
