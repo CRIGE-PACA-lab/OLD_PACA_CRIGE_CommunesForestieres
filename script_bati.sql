@@ -19,8 +19,9 @@ CREATE SCHEMA old_dep;
 --- pour la majorité des bâtiments référencés dans la BD_TOPO (80% sur -------
 --- le département des Alpes de Haute-Provence).					   -------
 ------------------------------------------------------------------------------
-
+-------------------------------------------------------------------------
 --- I-a. Jointure BDNB (adresse et parcelle) --> BD TOPO (bâtiments) ---
+-------------------------------------------------------------------------
 
 Alter table old_dep.batiments
 add column bdnd_batiment_groupe_id VARCHAR(50); 
@@ -67,7 +68,9 @@ bdnb_libelle_commune = b.libelle_commune
 FROM old_dep."bdnb — adresse_compile" AS b 
 where a.bdnb_cle_interop_adr = b.cle_interop_adr;
 
+-----------------------------------------------------------
 --- I-b. Jointure RNB (adresse) --> BD TOPO (bâtiments) ---
+-----------------------------------------------------------
 
 ALTER TABLE old_dep.batiments
 ADD COLUMN rnb_adresses TEXT; 
@@ -77,7 +80,9 @@ set rnb_adresses = b.addresses
 from old_dep."RNB" as b
 where a.identifiants_rnb = rnb_id;
 
+---------------------------------------------------------------------------
 --- I-c. Jointure BANPLUS (adresse et parcelle) --> BD TOPO (bâtiments) ---
+---------------------------------------------------------------------------
 
 ALTER TABLE old_dep.batiments
 ADD COLUMN ban_parcelle VARCHAR; 
@@ -112,8 +117,9 @@ ban_nom_com = b.nom_com
 from old_dep.adresse_ban as b
 where a.ban_id_adr = b.id_adr;
 
---- I-d. Jointure cadastre (adresse et parcelle) --> BD TOPO (bâtiments) ---
-
+-------------------------------------------------------------------------------
+--- I-d. Jointure cadastre (adresse et parcelle) vers BD TOPO (bâtiments) ---
+-------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 --- NB : Les champs parcelles et adresse générés par cette opération seront ---
 --- utilisés par défaut lorsqu'aucune information n'a été remonté par les   --- 
@@ -135,11 +141,12 @@ cadastre_adresse = b.adresse
 from old_dep.cadastre as b 
 where st_intersects(a.geom,b.geom);
 
+-------------------------------------------------
 --- I-e. Création d'un champs adresse unique ---
-
+-------------------------------------------------
 -----------------------------------------------------------------------------------
 --- NB : Les informations adresses et les numérosd de parcelles collectées sont ---
---- agrégées dans les même champs selon l'ordre de proiorité suivant : 		    ---
+--- agrégées dans les même champs selon l'ordre de priorité suivant : 		    ---
 ---		1. BDNB  															    ---
 ---		2. RNB  																---
 ---		3. BANPLUS  															---
@@ -283,7 +290,9 @@ from old_dep.adr_intermediaire;
 
 drop table if exists old_dep.adr_intermediaire; 
 
+----------------------------
 --- II-b. Table cadastre ---
+----------------------------
 
 Drop table if exists old.old_dep.cadastre;
 
@@ -313,8 +322,11 @@ ADD COLUMN id_prop VARCHAR;
 UPDATE old_dep.cadastre
 SET id_prop = left(proprietaire,6);
 
+CREATE INDEX ON old_dep.cadastre USING gist (geom); 
 
+-------------------------------
 --- II-c. Table zonage_old ---
+-------------------------------
 
 DROP TABLE IF EXISTS old_dep.zonage_old;
 CREATE TABLE old_dep.zonage_old(
@@ -330,7 +342,12 @@ from old_dep.deb_ign;
 
 drop table if exists old_dep.deb_ign;
 
+
+CREATE INDEX ON old_dep.zonage_old USING gist (geom); 
+
+------------------------
 --- II-d. Table PLU ---
+------------------------
 ------------------------------------------------------------------------------------------
 --- Sur Qgis selectionner les zone U uniquement -----------------------------------
 --- Importer la couche "zoneu" dans PostgreSQL avec transformation en EPSG:2154 ---
@@ -437,304 +454,6 @@ CREATE INDEX
 ON old_dep.plu_corr_fin
 USING gist (geom);  
 
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-----                                                                                                          ----
-----                [DECONSEILLE POUR LES TRAITEMENT A L'ECHELLE DEPARTEMENTALE]							  ----
-----						SOUS-PARTIE 1 : IDENTIFICATION DES POINTS ORPHELINS   						      ----	
-----								TEMPS DE TRAITEMENT SUR UN DEPARTEMENT : 8H																
-----                                                                                                          ----
-----  Objectif : Localiser les points orphelins sur le contour du zonage                                      ----
-----                                                                                                          ----
-----  Contexte : Ces points sont présents sur le contour du zonage et sont à moins de 10 cm d'une limite      ----
-----  de parcelle, mais il n'y a pas de noeud existant sur le segment de la parcelle 						  ----
-----																										  ----
-----  Source : OLD_50m (DDT26)                   															  ----   
-----                                                                                                          ----
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-
----- Création de la table "parcelle_zu_t0" : Sélection des parcelles proches des 
-  -- zones urbaines 
-  -- Description : Cette table contient les géométries des parcelles situées à moins de 10 mètres
-  --               des zones urbaines.Elle vise à réduire le nombre de parcelles participant au calcul 
-  --               d'ajustement du zonage. Le contenu est une géométrie collection (ST_Collect), 
-  --               non directement affichable dans QGIS.
-
--- Créer la nouvelle table "parcelle_zu_t0"  des parcelles proches des zones 
--- urbaines. La table collecte les géométries des parcelles situées à moins de 10 mètres des 
--- zones urbaines (ST_Buffer).
-DROP TABLE IF EXISTS old_dep.parcelle_zu_t0;
-CREATE TABLE old_dep.parcelle_zu_t0 AS
-SELECT ST_Collect(ptf4.geom) AS geom -- Collecte les géométries des parcelles dans une géométrie unique
-FROM old_dep.cadastre AS ptf4, -- Source : parcelles initiales
-     old_dep.plu_corr0  AS zrg  -- Source : zones urbaines
-WHERE ST_Intersects( -- Vérifie l'intersection entre les géométries
-                    ptf4.geom,
-                    ST_Buffer(zrg.geom, 1)
-                    ); -- Crée une zone tampon de 1 mètre autour des zones urbaines
-
-CREATE INDEX 
-ON old_dep.parcelle_zu_t0
-USING gist (geom); 
- 
---*------------------------------------------------------------------------------------------------------------*--
----- Création de la table "parcelle_zu_t1" : Extraction des sommets des parcelles 
-  -- proches des zones urbaines
-  -- Description : Cette table contient les points individuels extraits des géométries des parcelles
-  --               proches des zones urbaines. Elle décompose les contours des parcelles en éliminant 
-  --               les points redondants pour des analyses plus précises et ciblées.
-
--- Créer une nouvelle table "parcelle_zu_t1" décomposant les géométries des 
--- parcelles proches des zones urbaines en points individuels.
-DROP TABLE IF EXISTS old_dep.parcelle_zu_t1;
-CREATE TABLE old_dep.parcelle_zu_t1 AS
-SELECT (ST_Dump( -- Décompose les collections géométriques en entités individuelles
-          ST_RemoveRepeatedPoints( -- Supprime les points redondants pour éviter les doublons
-             ST_Points(ptfz.geom) -- Extrait les sommets (points) de chaque géométrie polygonale
-       ))).geom AS geom -- Définit la colonne résultante "geom" contenant les points extraits
-FROM old_dep.parcelle_zu_t0 AS ptfz; -- Source : parcelles proches des zones urbaines
-
-CREATE INDEX  
-ON old_dep.parcelle_zu_t1
-USING gist (geom); -- Utilise un index spatial GiST pour optimiser les calculs géographiques
-
---*------------------------------------------------------------------------------------------------------------*--
----- Création de la table "parcelle_zu_t2" : Union des sommets des parcelles 
-  -- proches des zones urbaines
-
-
--- Créer une nouvelle table "parcelle_zu_t2" Union des sommets des parcelles 
-  -- proches des zones urbaines
-DROP TABLE IF EXISTS old_dep.parcelle_zu_t2;
-CREATE TABLE old_dep.parcelle_zu_t2 AS
-SELECT ST_Union(zut1.geom) AS geom
-FROM old_dep.parcelle_zu_t1 zut1;
-
-CREATE INDEX 
-ON old_dep.parcelle_zu_t2
-USING gist (geom); -- Utilise un index spatial GiST pour optimiser les calculs géographiques
-
---*------------------------------------------------------------------------------------------------------------*--
----- Création de la table "zonage_corr1" : Extraction des points des contours des polygones
-  -- Description : Cette table contient les points individuels extraits des contours des zones urbaines.
-  --               Les points sont extraits des géométries polygonales, y compris les trous éventuels, 
-  --               afin de faciliter les analyses géométriques et les traitements ultérieurs.
-
-
--- Créer une nouvelle table "zonage_corr1" qui extrait les points des contours des zones 
--- urbaines, y compris ceux des éventuels trous internes.
-DROP TABLE IF EXISTS old_dep.zonage_corr1;
-CREATE TABLE old_dep.zonage_corr1 AS
-SELECT (ST_DumpPoints(zrg.geom)).path AS corr1path, -- Décompose et extrait des points des contours
-		(ST_DumpPoints(zrg.geom)).geom AS geom
-FROM old_dep.plu_corr0  AS zrg; -- Source : table regroupant les géométries de zu
-
-CREATE INDEX 
-ON old_dep.zonage_corr1 -- Index appliqué à la table nouvellement créée
-USING gist (geom); -- Utilise un index spatial GiST pour optimiser les calculs géométriques
-
-
---*------------------------------------------------------------------------------------------------------------*--
-
----- Création de la table "zonage_corr3" : Recale les points de contour du zonage sans "vis à vis" 
--- Description : Cette table contient les points du contour du zonage recalés 
--- sur le point le plus proche d'un segment de parcelle, jusquà une distance de 10 cm (ajustable)
-
-DROP TABLE IF EXISTS old_dep.zonage_corr3;
-CREATE TABLE old_dep.zonage_corr3 AS
-WITH sommets_parcelles AS (
-  SELECT geom FROM old_dep.parcelle_zu_t1
-),
-
--- points du zonage déjà exactement sur un sommet de parcelle
-exact_match AS (
-  SELECT 
-    z2.corr1path AS corr3path,
-    z2.geom AS geom,
-    'origine_sur_parcelle'::text AS recalage_mode
-  FROM old_dep.zonage_corr1 z2
-  JOIN sommets_parcelles p
-    ON ST_Equals(z2.geom, p.geom)
-),
-
--- points du zonage à snapper vers un sommet proche (si pas déjà traité)
-snap_points AS (
-  SELECT 
-    z2.corr1path AS corr3path,
-    p.geom AS geom,
-    ST_Distance(z2.geom, p.geom) AS dist,
-    'snap_sur_sommet'::text AS recalage_mode
-  FROM old_dep.zonage_corr1 z2
-  LEFT JOIN exact_match em ON z2.corr1path = em.corr3path
-  JOIN sommets_parcelles p
-    ON ST_DWithin(z2.geom, p.geom, 0.1)
-  WHERE em.corr3path IS NULL
-),
-
-snap_min AS (
-  SELECT DISTINCT ON (corr3path)
-         corr3path,
-         geom,
-         recalage_mode
-  FROM snap_points
-  ORDER BY corr3path, dist ASC
-),
-
---  projection orthogonale (segments)
-segments_parcelles AS (
-  SELECT (ST_Dump(ST_Boundary(geom))).geom AS segment
-  FROM old_dep.parcelle_zu_t0
-),
-
-projections AS (
-  SELECT 
-    z2.corr1path AS corr3path,
-    ST_ClosestPoint(s.segment, z2.geom) AS geom,
-    ST_Distance(z2.geom, s.segment) AS dist,
-    'projection_segment'::text AS recalage_mode
-  FROM old_dep.zonage_corr1 z2
-  LEFT JOIN exact_match em ON z2.corr1path = em.corr3path
-  LEFT JOIN snap_min sm ON z2.corr1path = sm.corr3path
-  JOIN segments_parcelles s
-    ON ST_DWithin(s.segment, z2.geom, 0.1)
-  WHERE em.corr3path IS NULL AND sm.corr3path IS NULL
-),
-
-projections_min AS (
-  SELECT DISTINCT ON (corr3path)
-         corr3path,
-         geom,
-         recalage_mode
-  FROM projections
-  ORDER BY corr3path, dist ASC
-),
-
--- points non traités (aucun recalage possible)
-non_recales AS (
-  SELECT 
-    z2.corr1path AS corr3path,
-    z2.geom,
-    'non_recalé'::text AS recalage_mode
-  FROM old_dep.zonage_corr1 z2
-  LEFT JOIN exact_match em ON z2.corr1path = em.corr3path
-  LEFT JOIN snap_min sm ON z2.corr1path = sm.corr3path
-  LEFT JOIN projections_min pr ON z2.corr1path = pr.corr3path
-  WHERE em.corr3path IS NULL AND sm.corr3path IS NULL AND pr.corr3path IS NULL
-),
-
--- fusion ordonnée (ordre prioritaire respecté)
-fusion_finale AS (
-  SELECT * FROM exact_match
-  UNION ALL
-  SELECT * FROM snap_min
-  UNION ALL
-  SELECT * FROM projections_min
-  UNION ALL
-  SELECT * FROM non_recales
-)
-SELECT * FROM fusion_finale;
-COMMIT;
-
-CREATE INDEX 
-ON old_dep.zonage_corr3 -- Index appliqué sur la table 
-USING gist (geom); -- Utilise un index spatial GiST pour optimiser les calculs géographiques
-
---*------------------------------------------------------------------------------------------------------------*--
-
----- Création de la table "zonage_corr4" : Remplace les points à recaler par les points recalés
--- du zonage
-
-DROP TABLE IF EXISTS old_dep.zonage_corr4;
-CREATE TABLE old_dep.zonage_corr4 AS
-SELECT z3.corr3path AS path,
-		z3.geom -- Sélectionne les géométries des points du zonage
-FROM  old_dep.zonage_corr3 AS z3 -- Source : points du zonage recalés
-UNION ALL
-SELECT z1.corr1path AS path,
-       z1.geom -- Points du zonage d'origine, uniquement si non recalés
-FROM old_dep.zonage_corr1 AS z1
-LEFT JOIN old_dep.zonage_corr3 AS z3
-ON z1.corr1path = z3.corr3path
-WHERE z3.corr3path IS NULL; -- Exclure les points déjà recalés
-
-CREATE INDEX 
-ON old_dep.zonage_corr4 -- Index appliqué sur la table 
-USING gist (geom); -- Utilise un index spatial GiST pour optimiser les calculs géographiques
-
---*------------------------------------------------------------------------------------------------------------*--
-
----- Création de la table "zonage_corr5" : Reconstruction des anneaux des polygones du zonage urbain
-  -- Description : Cette table regroupe les points du zonage pour reconstruire les anneaux extérieurs 
-  -- et intérieurs des polygones.
-
-DROP TABLE IF EXISTS old_dep.zonage_corr5;
-CREATE TABLE old_dep.zonage_corr5 AS
-SELECT corr4.path[1] AS path1, -- Identifiant du polygone
-       corr4.path[2] AS path2, -- Identifiant de l'anneau (1 = extérieur, >1 = intérieur)
-       ST_MakeLine(corr4.geom ORDER BY corr4.path) AS geom -- Reconstruction des anneaux avec tri
-FROM old_dep.zonage_corr4 corr4
-GROUP BY corr4.path[1], corr4.path[2];
-COMMIT; -- Valide la création de la table
-
-CREATE INDEX 
-ON old_dep.zonage_corr5
-USING gist (geom);
-
---*------------------------------------------------------------------------------------------------------------*--
-
----- Création de la table "04112_zonage_corr4" : Reconstruction des polygones du zonage urbain
-  -- Description : Cette table reconstruit les polygones du zonage urbain à partir des anneaux extérieurs
-  -- et intérieurs.
-
-DROP TABLE IF EXISTS old_dep.zonage_corr4;
-CREATE TABLE old_dep.zonage_corr4 AS
-WITH array_geom AS (
-    SELECT DISTINCT path1,
-           ARRAY(
-                SELECT ST_AddPoint(corr5.geom, ST_StartPoint(corr5.geom)) AS geom -- Ferme l'anneau en ajoutant le premier point à la fin
-                FROM old_dep.zonage_corr5 corr5
-                WHERE corr5.path1 = ag.path1
-                ORDER BY corr5.path2
-           ) AS array_anneaux
-    FROM old_dep.zonage_corr5 ag
-)
-SELECT ag.path1 AS path1,
-       ST_MakePolygon(
-            ag.array_anneaux[1],  -- Anneau extérieur
-            ag.array_anneaux[2:] -- Anneaux intérieurs
-       ) AS geom
-FROM array_geom ag;
-COMMIT; -- Valide la création de la table
-
-CREATE INDEX 
-ON old_dep.zonage_corr4
-USING gist (geom);
-
---*------------------------------------------------------------------------------------------------------------*--
-
----- Création de la table "plu_corr_fin" : Regroupement des polygones en un MultiPolygon unique
-  -- Description : Cette table regroupe tous les polygones corrigés pour créer une couche unique de zonage.
-
-DROP TABLE IF EXISTS old_dep.plu_corr_fin;
-CREATE TABLE old_dep.plu_corr_fin AS
-SELECT ST_Multi(ST_Union(corr4.geom)) AS geom
-FROM old_dep.zonage_corr4 corr4;
-
-CREATE INDEX 
-ON old_dep.plu_corr_fin
-USING gist (geom);
-
-DROP TABLE IF EXISTS old_dep.zonage_corr4;
-DROP TABLE IF EXISTS old_dep.zonage_corr5;
-DROP TABLE IF EXISTS old_dep.zonage_corr3;
-DROP TABLE IF EXISTS old_dep.zonage_corr1;
-DROP TABLE IF EXISTS old_dep.parcelle_zu_t2;
-DROP TABLE IF EXISTS old_dep.parcelle_zu_t1;
-DROP TABLE IF EXISTS old_dep.parcelle_zu_t0;
-DROP TABLE IF EXISTS old_dep.plu_corr0 ;
-
----[FIN FACULTATIF] ---
 
 --- II-e. Table batiments ---
 
@@ -752,7 +471,7 @@ set id_adresse = b.id_adresse
 from old_dep.adresse as b
 where a.cleabs = b.id_bd_topo; 
 
-CREATE TABLE old_dep.Bati(
+CREATE TABLE old_dep.bati(
    ID_bati SERIAL,
    id_bdtopo VARCHAR(50),
    nature VARCHAR(50),
@@ -767,9 +486,11 @@ CREATE TABLE old_dep.Bati(
 );
 
 
-insert into  old_dep.Bati(id_bdtopo,nature,geom,id_zonage,geo_parcel,id_adresse)
+insert into  old_dep.bati(id_bdtopo,nature,geom,id_zonage,geo_parcel,id_adresse)
 select cleabs,nature,geom,id_zonage,parcelle,id_adresse
 from old_dep.batiments;
+
+CREATE INDEX ON old_dep.bati USING gist (geom); 
 
 
 --------------------------------------------------------------------------------------------------------------------------------------------
@@ -780,14 +501,15 @@ from old_dep.batiments;
 --- 2. Identification des obligations sans superpositions (III-b , III-c, III-e)														 ---
 --- 3. Identification des obligations avec superpositions, soit le restant des oblifgations modélisées en 1 et non relevées en 2 (III-f) ---
 --------------------------------------------------------------------------------------------------------------------------------------------
-
+---------------------------------
 --- III-a. Ensemble des OLD ---
-
+---------------------------------
 -------------------------------------------------------------------------------------------------------------------
 --- NB : Cette première étape consiste à créer une zone tampon de 50 m autour de tout les bâtiments.           ---
 --- La remontée des n° de parcelles à débroussailler se fait par intersection du cadastre. 					   ---
 --- La différenciation (superposition d'obligation ou non) est réalisée par les étapes III-b , III-c et III-d. ---
---- Ces trois étapes viennent successivement extraire les entités dans la présente table.                      ---
+--- Ces trois étapes viennent successivement extraire les entités dans la table 'bati_soumis_temp2' .          ---
+--- Importer la couche commune de la BD TOPO																   ---
 ------------------------------------------------------------------------------------------------------------------
 
 alter table old_dep.bati
@@ -796,74 +518,105 @@ add column obl_nom TEXT,
 add column obl_adresse INT;
 
 Update old_dep.bati as a 
-set obl_comptcom = b.compt_com
+set obl_comptcom = b.compt_com,
+    obl_nom = b.proprietaire
 from old_dep.cadastre as b 
-where a.geo_parcel = b.geo_parcel;
-
-Update old_dep.bati as a 
-set obl_nom = b.proprietaire
-from old_dep.cadastre as b
 where a.geo_parcel = b.geo_parcel;
 
 Update old_dep.bati as a 
 set obl_adresse = id_adresse;
 
+--- Zones tampon de 50 m ---
+
 drop table if exists old_dep.bati_soumis_temp; 
 create table old_dep.bati_soumis_temp as 
-select id_bati as id_bati,
-obl_comptcom as obl_comptcom,
-obl_nom as obl_nom,
-obl_adresse as obl_adresse,
-st_buffer(geom,50) as geom
-from old_dep.bati 
-where id_zonage IS NOT NULL;
+select 
+a.obl_comptcom as obl_comptcom,
+a.obl_nom as obl_nom,
+  ST_CollectionExtract(  st_union(st_buffer(a.geom,50)),3) as geom
+from old_dep.bati  as a, old_dep.com as b  
+where id_zonage IS NOT NULL and st_intersects(a.geom,b.geom) and b.code_insee = '04112'
+group by obl_comptcom, obl_nom;
+
+CREATE INDEX ON old_dep.bati_soumis_temp USING GIST (geom);
+
+--- Difference avec les zone U ---
+
+Drop table if exists old_dep.plu_com; 
+Create table old_dep.plu_com as 
+select a.type_zone,
+st_Union(a.geom) as geom
+from old_dep.plu_corr_fin as a, old_dep.com as b 
+where st_intersects(a.geom,b.geom) and b.code_insee = '04112'
+group by a.type_zone;
 
 Drop table if exists old_dep.bati_soumis_temp1 ;
 Create table old_dep.bati_soumis_temp1 as 
-select a.id_bati as id_bati,
+select 
 a.obl_comptcom as obl_comptcom,
-a.obl_nom as obl_nom,
-a.obl_adresse as obl_adresse,
-st_difference(a.geom,b.geom) as geom 
-from old_dep.bati_soumis_temp as a, old_dep.plu_corr_fin as b;
+a.obl_nom as obl_nom,                    		      
+	       ST_CollectionExtract(      		      
+             ST_MakeValid(st_difference(a.geom, b.geom))3) as geom 
+from old_dep.bati_soumis_temp as a, old_dep.plu_com as b;
 
 CREATE INDEX ON old_dep.bati_soumis_temp1 USING GIST (geom);
 
+--- Intersection entre les zones tampon de 50 m hors zone U et le cadastre ---
+
 drop table if exists old_dep.bati_soumis_temp2 ; 
 create table old_dep.bati_soumis_temp2 as
-select a.id_bati,
+select
 a.obl_comptcom as obl_comptcom,
 a.obl_nom as obl_nom,
-a.obl_adresse as obl_adresse,
 b.geo_parcel as geo_parcel,
 b.compt_com as prop_comptcom,
-b.proprietaire as prop_nom,
-b.adresse as prop_adresse,
 st_intersection(a.geom,b.geom) as geom 
-from old_dep.bati_soumis_temp1 as a join old_dep.cadastre as b on st_intersects(a.geom,b.geom); 
+from old_dep.bati_soumis_temp1 as a, old_dep.cadastre as b 
+where st_intersects(a.geom,b.geom); 
 
+CREATE INDEX ON old_dep.bati_soumis_temp2 USING GIST (geom);
+
+---------------------------------------------------------------------------
 --- III-b. Les propriétaires qui doivent débroussailler leur propriété  ---
+---------------------------------------------------------------------------
 
 drop table if exists old_dep.bati_old_is_prop;
 create table old_dep.bati_old_is_prop as
 select * from old_dep.bati_soumis_temp2
 where obl_comptcom = prop_comptcom;
 
+--- Suppression des entités identifiées dans la table "old_is_prop" (environ 8 minutes) ---
+
 delete from old_dep.bati_soumis_temp2
 where obl_comptcom = prop_comptcom;
 
---- III-c. Les propriétaires responsables du débroussaillement d'une parcelle tierce sans qu'un autre propriétaire n'aient été identifié ---
+drop table if exists old_dep.old_seultemp1;
+create table old_dep.old_seultemp1 as 
+select
+st_memunion(geom) as geom 
+from old_dep.bati_old_is_prop;
+
+CREATE INDEX ON old_dep.old_seultemp1 USING GIST (geom);
 
 drop table if exists old_dep.bati_soumis_temp3;
-create table old_dep.bati_soumis_temp3 as
-select 
-obl_comptcom as obl_comptcom,
-count(obl_comptcom) as nb_obl,
-geo_parcel as geo_parcel, 
-count(geo_parcel) as nb_parcel,
-st_union(geom) as geom
-from old_dep.bati_soumis_temp2
-group by obl_comptcom, geo_parcel;
+create table old_dep.bati_soumis_temp3 as 
+select a.obl_comptcom, 
+a.obl_nom, 
+a.geo_parcel, 
+a.prop_comptcom,                     		      
+	       ST_CollectionExtract(      		      
+             ST_MakeValid(
+			   ST_Difference(a.geom,b.geom)),3) as geom 
+from old_dep.bati_soumis_temp2 as a, old_dep.old_seultemp1 as b; 
+
+CREATE INDEX ON old_dep.bati_soumis_temp3 USING GIST (geom);
+
+DELETE FROM  old_dep.bati_soumis_temp3
+WHERE ST_IsEmpty(geom);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+--- III-c. Les propriétaires responsables du débroussaillement d'une parcelle tierce sans qu'un autre propriétaire n'aient été identifié ---
+--------------------------------------------------------------------------------------------------------------------------------------------
 
 drop table if exists old_dep.count_obl;
 create table old_dep.count_obl as
@@ -872,46 +625,46 @@ count(obl_comptcom) as nb_deb
 from old_dep.bati_soumis_temp3
 group by geo_parcel;
 
-alter table old_dep.bati_soumis_temp2
+alter table old_dep.bati_soumis_temp3
 add column nb_deb INT; 
 
-update old_dep.bati_soumis_temp2 as a
+update old_dep.bati_soumis_temp3 as a
 set nb_deb = b.nb_deb
 from old_dep.count_obl as b 
 where a.geo_parcel = b.geo_parcel;
 
 drop table if exists old_dep.bati_old_is_seul;
 create table old_dep.bati_old_is_seul as 
-select * from old_dep.bati_soumis_temp2
-where nb_deb = 1; 
+select * from old_dep.bati_soumis_temp3
+where nb_deb = 1 or nb_deb = 0; 
 
-delete from old_dep.bati_soumis_temp2
-where nb_deb = 1;
+delete from old_dep.bati_soumis_temp3
+where nb_deb = 1 or nb_deb = 0;
 
+----------------------------------------------------------------------------------
 --- III-d. Les propriétaires qui doivent débroussailler une parcelle en zone U ---
+----------------------------------------------------------------------------------
 
 drop table if exists  old_dep.bati_old_zone_u;
 create table old_dep.bati_old_zone_u as 
 select a.compt_com as obl_comptcom,
 a.proprietaire as obl_nom,
-a.adresse as obl_adresse,
 a.geo_parcel as geo_parcel,
 a.compt_com as prop_comptcom,
 a.proprietaire as prop_nom,
-a.adresse as prop_adresse,
 st_intersection(a.geom,b.geom) as geom
-from old_dep.cadastre as a, old_dep.plu_corr_fin as b, old_dep.zonage_old as c
+from old_dep.cadastre as a, old_dep.plu_com as b, old_dep.zonage_old as c
 where st_intersects(a.geom,c.geom) and st_intersects(a.geom,b.geom);
 
+-----------------------------------------------------------------------------------------------------------------
 --- III-e. Les OLD ne faisant pas l'objet de superposition au sens de l'article 12 de loi du 10 juillet 2023  ---
-
-
+-----------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------
 --- NB : Cette table est une fusion des 3 table créees aux étapes III-b , III-c et III-d ---
 ----------------------------------------------------------------------------------------------
 
-Drop table if exists old_dep.obligations_bati;
-CREATE TABLE old_dep.obligations_bati(
+Drop table if exists old_dep.obligations_bati_simple cascade;
+CREATE TABLE old_dep.obligations_bati_simple(
    id_obligation SERIAL,
    geom GEOMETRY,
    situation VARCHAR(250),
@@ -934,136 +687,49 @@ CREATE TABLE old_dep.obligations_bati(
    FOREIGN KEY(ID_bati) REFERENCES  old_dep.Bati(ID_bati)
 );
 
-insert into old_dep.obligations_bati(geom,comptcom_prop,nom_prop,adresse_prop,obl_comptcom,obl_nom,geo_parcel,id_bati)
-select geom,prop_comptcom,prop_nom,prop_adresse,obl_comptcom,obl_nom,geo_parcel,id_bati
+insert into old_dep.obligations_bati_simple(geom,comptcom_prop,obl_comptcom,obl_nom,geo_parcel)
+select geom,prop_comptcom,obl_comptcom,obl_nom,geo_parcel
 from old_dep.bati_old_is_prop;
 
-insert into old_dep.obligations_bati(geom,comptcom_prop,nom_prop,adresse_prop,obl_comptcom,obl_nom,geo_parcel,id_bati)
-select geom,prop_comptcom,prop_nom,prop_adresse,obl_comptcom,obl_nom,geo_parcel,id_bati
+insert into old_dep.obligations_bati_simple(geom,comptcom_prop,obl_comptcom,obl_nom,geo_parcel)
+select geom,prop_comptcom,obl_comptcom,obl_nom,geo_parcel
 from old_dep.bati_old_is_seul;
 
-insert into old_dep.obligations_bati(geom,comptcom_prop,nom_prop,adresse_prop,obl_comptcom,obl_nom,geo_parcel)
-select geom,prop_comptcom,prop_nom,prop_adresse,obl_comptcom,obl_nom,geo_parcel
+insert into old_dep.obligations_bati_simple(geom,comptcom_prop,obl_comptcom,obl_nom,geo_parcel)
+select geom,prop_comptcom,obl_comptcom,obl_nom,geo_parcel
 from old_dep.bati_old_zone_u;
 
-update old_dep.obligations_bati
-set nb_obl = 1;
+CREATE INDEX ON old_dep.obligations_bati_simple USING GIST (geom);
 
-DROP TABLE IF EXISTS old_dep.obligations_bati_simple; 
-CREATE TABLE old_dep.obligations_bati_simple AS 
-select obl_comptcom,
-geo_parcel, 
-ST_Multi(                             
-           ST_CollectionExtract(             
-               ST_MakeValid(                 
-                   ST_Union(geom)),     
-       3)) AS geom  
-from old_dep.obligations_bati
-group by obl_comptcom, geo_parcel; 
+--- Enrichissement (facultatif) de la table ---
 
+update old_dep.obligations_bati_simple
+set nb_obl = 1,
+surface_m2 = st_area(geom);
 
---- III-f. Les obligations multiples (superpositions) ---
-
---------------------------------------------------------------------------------------------------------------------
---- NB : Version "nétoyée" de la table générée lors de l'étape III-a. Les obligations (à plusieurs) sont stockées ---
---- dans une autre table 'old_dep.obligations_bati_multi'.									      				 ---
----------------------------------------------------------------------------------------------------------------------
-
-Drop table if exists old_dep.obligations_bati_multi;
-CREATE TABLE old_dep.obligations_bati_multi(
-   id_obligation SERIAL,
-   geom GEOMETRY,
-   situation VARCHAR(250),
-   comptcom_prop VARCHAR(250),
-   nom_prop TEXT,
-   adresse_prop TEXT,
-   obl_comptcom VARCHAR(250),
-   obl_nom TEXT,
-   obl_adresse TEXT,
-   obl_statut VARCHAR(250),
-   surface_m2 FLOAT,
-   id_zone INT,
-   geo_parcel VARCHAR(250),
-   id_prop VARCHAR(50),
-   ID_bati INT,
-   nb_obl INTEGER, 
-   PRIMARY KEY(id_obligation),
-   FOREIGN KEY(id_zone) REFERENCES  old_dep.plu_corr_fin(id_zone),
-   FOREIGN KEY(geo_parcel) REFERENCES  old_dep.cadastre(geo_parcel),
-   FOREIGN KEY(ID_bati) REFERENCES  old_dep.Bati(ID_bati)
-);
-
-
-insert into old_dep.obligations_bati_multi(comptcom_prop,nom_prop,adresse_prop,obl_comptcom,obl_nom,obl_adresse,geo_parcel,id_bati,nb_obl,geom)
-select prop_comptcom,prop_nom,prop_adresse,obl_comptcom,obl_nom,obl_adresse,geo_parcel,id_bati,nb_deb,geom
-from old_dep.bati_soumis_temp2;
-
-Update old_dep.obligations_bati_multi as a
+Update old_dep.obligations_bati_simple as a
 set situation = case 
 when st_within(a.geom,b.geom) then 'dans la zone U'
 when st_disjoint(a.geom,b.geom) then 'en dehors de la zone U'
-when st_within(a.geom_tot_old,b.geom) then 'dans la zone U'
-when st_disjoint(a.geom_tot_old,b.geom) then 'en dehors de la zone U'
 else 'chevauchant une zone U' end 
-from  old_dep.plu_corr_fin as b,
+from  old_dep.plu_com as b
 where st_intersects(a.geom,b.geom); 
 
-UPDATE old_dep.obligations_bati_multi as a 
-SET id_zone = b.id_zone
-from old_dep.plu_corr_fin as b
-where st_intersects(a.geom,b.geom);
+update old_dep.obligations_bati_simple as a 
+set nom_prop = b.proprietaire,
+adresse_prop = b.adresse 
+from old_dep.cadastre as b 
+where a.comptcom_prop = b.compt_com; 
 
-Update old_dep.obligations_bati_multi as a
-set surface_m2 = case when a.geom is not null then st_area(a.geom)
-else st_area(a.geom_tot_old)
-end ; 
-
-Drop table if exists old_04.bati_old_is_prop ;
-Drop table if exists old_04.bati_old_is_seul;
-Drop table if exists old_04.bati_old_zone_u;
-Drop table if exists old_04.bati_soumis_temp;
-Drop table if exists old_04.bati_soumis_temp1;
-Drop table if exists old_04.bati_soumis_temp2;
-Drop table if exists old_04.bati_soumis_temp3; 
-Drop table if exists old_04.count_obl;
-Drop table if exists old_04.obligations_bat;
-Drop table if exists old_04.obligations_bat2;
-Drop table if exists old_04.old_plusieurs_bat;
-Drop table if exists old_04.old_plusieurs_temp;
-Drop table if exists old_04.old_seul_regr;
-Drop table if exists old_04.plu_reg;
+update old_dep.obligations_bati_simple as a 
+set obl_adresse = b.obl_adresse,
+id_bati = b.id_bati 
+from old_dep.bati as b 
+where a.obl_comptcom = b.obl_comptcom;
 
 
-------------------------------------------------
---- IV. Cartographie et outils collaboratifs ---
-----------------------------------------------------------------------------------------------------------
--- Résumé : 																						   ---
-----------------------------------------------------------------------------------------------------------
-
---- IV-a. Regroupement des OLD par propriétaire (hors MCD) ---
-
-----------------------------------------------------------------------------------------------------------------
---- NB : Jusqu'à présent, l'unité de référence pour l'OLD est le bâtiment. Une OLD est reliée à un bâtiment. ---
---- Cette opération (facultative) génère un affichage des obligations par propriétaire. 				     ---
-----------------------------------------------------------------------------------------------------------------
-
-drop table if exists old_dep.obligations_bat_carto;
-create table old_dep.obligations_bat_carto as
-select
-a.geo_parcel as geo_parcel,
-a.obl_nom as obl_nom,
-st_union(a.geom) as geom,
-count(a.geo_parcel) as geo_parcel_nb, 
-count(a.obl_nom) as obl_nom_nb
-from old_dep.obligations_bati as a 
-where a.nb_obl = 1
-group by geo_parcel, obl_nom;
-
-Alter table old_04.obligations_bat_carto
-add column statut VARCHAR; 
-
-UPDATE old_04.obligations_bat_carto
-SET statut = (
+UPDATE old_dep.obligations_bati_simple
+SET obl_statut = (
 CASE 
 WHEN obl_nom like '%COMMUNE%' OR obl_nom like '%MAIRIE%'
 THEN 'Communal'
@@ -1096,8 +762,121 @@ ELSE 'Prive'
 END
 );
 
---- IV-b. Table contrôle ---
+----------------------------------------------------------
+--- III-f. Les obligations multiples (superpositions) ---
+----------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------
+--- NB : Version "nétoyée" de la table générée lors de l'étape III-a. Les obligations (à plusieurs) sont stockées ---
+--- dans une autre table 'old_dep.obligations_bati_multi'.									      				 ---
+---------------------------------------------------------------------------------------------------------------------
 
+Drop table if exists old_dep.obligations_bati_multi cascade;
+CREATE TABLE old_dep.obligations_bati_multi(
+   id_obligation SERIAL,
+   geom GEOMETRY,
+   situation VARCHAR(250),
+   comptcom_prop VARCHAR(250),
+   nom_prop TEXT,
+   adresse_prop TEXT,
+   obl_comptcom VARCHAR(250),
+   obl_nom TEXT,
+   obl_adresse TEXT,
+   obl_statut VARCHAR(250),
+   surface_m2 FLOAT,
+   id_zone INT,
+   geo_parcel VARCHAR(250),
+   id_prop VARCHAR(50),
+   ID_bati INT,
+   nb_obl INTEGER, 
+   PRIMARY KEY(id_obligation),
+   FOREIGN KEY(id_zone) REFERENCES  old_dep.plu_corr_fin(id_zone),
+   FOREIGN KEY(geo_parcel) REFERENCES  old_dep.cadastre(geo_parcel),
+   FOREIGN KEY(ID_bati) REFERENCES  old_dep.Bati(ID_bati)
+);
+
+
+insert into old_dep.obligations_bati_multi(comptcom_prop,obl_comptcom,obl_nom,geo_parcel,nb_obl,geom)
+select prop_comptcom,obl_comptcom,obl_nom,geo_parcel,nb_deb,geom
+from old_dep.bati_soumis_temp3;
+
+--- Enrichissement (facultatif) de la table ---
+
+update old_dep.obligations_bati_multi
+set nb_obl = 1,
+surface_m2 = st_area(geom);
+
+Update old_dep.obligations_bati_multi as a
+set situation = case 
+when st_within(a.geom,b.geom) then 'dans la zone U'
+when st_disjoint(a.geom,b.geom) then 'en dehors de la zone U'
+else 'chevauchant une zone U' end 
+from  old_dep.plu_com as b
+where st_intersects(a.geom,b.geom); 
+
+update old_dep.obligations_bati_multi as a 
+set nom_prop = b.proprietaire,
+adresse_prop = b.adresse 
+from old_dep.cadastre as b 
+where a.comptcom_prop = b.compt_com; 
+
+update old_dep.obligations_bati_multi as a 
+set obl_adresse = b.obl_adresse,
+id_bati = b.id_bati 
+from old_dep.bati as b 
+where a.obl_comptcom = b.obl_comptcom;
+
+
+UPDATE old_dep.obligations_bati_multi
+SET obl_statut = (
+CASE 
+WHEN obl_nom like '%COMMUNE%' OR obl_nom like '%MAIRIE%'
+THEN 'Communal'
+WHEN obl_nom like '%COMMUNAUTE%' OR obl_nom like '%COM COM%' OR obl_nom like '%CC %' or obl_nom like '%COMMUN URBAIN%' 
+or obl_nom like '%METROPOLE%' or obl_nom like '%AGGLOMERATION%' OR obl_nom like '%SAN OUEST PROVENCE%' 
+THEN 'EPCI'
+WHEN obl_nom like '%DEPARTEMENT%' or obl_nom like '%CONSEIL GENERAL%' 
+THEN 'Departemental'
+WHEN obl_nom like '%ETAT%' OR obl_nom like '%ONF OFFICE NATIONAL DES FORETS%' OR obl_nom like '%OFFICE NATIONAL DES FORETS%'
+OR obl_nom like '%DOUANES%' OR obl_nom like '%DIRECTION REGIONALE DE L''ENVIRONNEMENT DE L''AMENAGEMENT%' 
+OR obl_nom like '%DIRECTION REGIONALE DE L AGRICULTURE ET DE LA FORET%' OR obl_nom like '%DIRECTION REGIONALE DE L ALIMENTATION AGRICULTURE ET FORET%'
+OR obl_nom like '%DREAL%' OR obl_nom like '%MINISTERE%' 
+OR obl_nom like 'UNITE DE SOUTIEN D''INFRASTRUCTURE DE LA DEF%'
+THEN 'Etat'		       
+WHEN obl_nom like '%M%' OR obl_nom like '%MME%'
+THEN 'Prive'
+WHEN obl_nom like '%SCE DEPARTEMENTAL INCENDIE ET SECOURS%'
+OR obl_nom like '%REGIE DEPARTEMENTALE DE TRANSPORTS%' 
+OR obl_nom like '%OEUVRE GENERALE DU CANAL%' OR obl_nom like '%COMMUNAUTE HOSPITALIERE MISSIONNAIRE%'
+OR obl_nom like '%EDF%' OR obl_nom like '%ASS SYNDICALE DU CANAL%' 
+OR obl_nom like '%DELACOMMUNE%' OR obl_nom like '%COOP VINICOLE%' 
+OR obl_nom like '%SYNDICAT DES VIDANGES%' 
+OR obl_nom like '%STE EAU DE MARSEILLE%' 
+OR obl_nom like '%SNCF%' 
+OR obl_nom like 'SOCIETE AMENAGEMENT FONCIER%'
+OR obl_nom like 'RTM'
+OR obl_nom like '%REGION PROVENCE-ALPES-COTE%'
+THEN 'Autre public' 
+ELSE 'Prive' 
+END
+);
+
+--- Suppression des tables temporaires ---
+
+Drop table if exists old_dep.bati_old_is_prop ;
+Drop table if exists old_dep.bati_old_is_seul;
+Drop table if exists old_dep.bati_old_zone_u;
+Drop table if exists old_dep.bati_soumis_temp;
+Drop table if exists old_dep.bati_soumis_temp1;
+Drop table if exists old_dep.bati_soumis_temp2;
+Drop table if exists old_dep.bati_soumis_temp3; 
+Drop table if exists old_dep.count_obl;
+Drop table if exists old_dep.plu_reg;
+drop table if exists old_dep.old_seultemp1;
+Drop table if exists old_dep.plu_com; 
+
+----------------------------
+--- IV-b. Table contrôle ---
+----------------------------
 ------------------------------------------------------------------
 --- NB : Table permettant la remontée d'informmations terrain. ---
 ------------------------------------------------------------------
@@ -1123,9 +902,9 @@ CREATE TABLE old_dep.controle(
    FOREIGN KEY(id_obligation) REFERENCES old_dep.obligations_bati(id_obligation)
 );
 
-
+------------------------------
 --- IV-c. Table ajout-bati ---
-
+------------------------------
 ---------------------------------------------------------------------------------
 --- NB : Table pour ajouter des constructions non référencées à la BD_TOPO ---
 --------------------------------------------------------------------------------
