@@ -7,9 +7,10 @@ Dans le contexte actuel d'intensification des feux et de la propagation du risqu
 
 **Objectifs**
 
-* Développer des outils permettant d’identifier les obligations, les propriétaires et les propriétés concernées sur la base d’un socle commun.
+* Proposer un socle de données minimal pour traiter de la question des OLD 
+* Développer des outils permettant d'harmoniser les données produites dans le cadre de l'identification des obligations. 
 * Suivre l’état d’embroussaillement et les travaux engagés sur les propriétés concernées.
-* Définir une méthode pour modéliser les superpositions d’obligations.
+* Faire connaître les outils permettant de cartographier les OLD. 
 
 **Données requises**
 
@@ -48,19 +49,23 @@ Dans le contexte actuel d'intensification des feux et de la propagation du risqu
 
 Les outils mis à disposition dans ce dépôt permettent de monter un schéma PostgreSQL-PostGIS référençant les enjeux (constructions, infrastructures et réseaux) concernés par les OLD. 
 La procédure est divisée en 3 scripts qui peuvent être mobilisés séparément : 
-* 🏢 _script_bati.sql_ : OLD générées par la présence de bâtiments (bâtiments, campings, parcs photovoltaïques...).
-* 🚗 _script_GL.sql_ : OLD générées par la présence d'infrastructures férroviaires ou du de transport d'éléctricité.
-* 🚆⚡ _script_routes.sql_ : OLD générées par la présence d'infrastructures liées au réseau routier.
+* 📂 MCD 
+	* MCD_OLD.sql : Modèle conceptuel de données (MCD) utilisables pour le montage d'une base de données OLD 
+	* MCD_OLD.pdf : Visualisation graphique du MCD
+* 📂 Scripts 
+	* 🏢 _script_bati.sql_ : OLD générées par la présence de bâtiments (bâtiments, campings, parcs photovoltaïques...).
+	* 🚗 _script_GL.sql_ : OLD générées par la présence d'infrastructures férroviaires ou du de transport d'éléctricité.
+	* 🚆⚡ _script_routes.sql_ : OLD générées par la présence d'infrastructures liées au réseau routier.
 
 Ces trois scripts permettent d'identifier les responsables de l'éxécution des OLD et les propriétés sur lesquelles ces dernières doivent être réalisées.
 Ces outils ne permettent pas d'identifier un responsable de l'éxécution des OLD dans le cas où plusieurs responsables potentiels seraient identifiés pour un même terrain. 
 
 Les résultats n'ont aucune valeur juridique ou contractuelle et ne sauraient se passer d'analyses terrain plus approfondies. 
 
-Le modèle et le dictionnaire de données sont disponibles **[ici](https://lizmap.crige-paca.org/index.php/view/media/getMedia?repository=projetold&project=old_04&path=media%2Fdoc%2Fdico_donnees_V1.xlsx) .**
 
 **A voir également :**
 
+* [Outil OLD_50 m de cartographie et de gestion des superpositions](https://gitlab-forge.din.developpement-durable.gouv.fr/frederic.sarret/old_50m)
 * [Déploiement de l'outil sur le département des Alpes de Haute-Provence](https://lizmap.crige-paca.org/index.php/view/map?repository=projetold&project=old_04) 
 * [LOI n° 2023-580 du 10 juillet 2023 visant à renforcer la prévention et la lutte contre l'intensification et l'extension du risque incendie](https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047805414)
 * [Les OLD sur le site du CRIGE PACA](https://www.crige-paca.org/projet/obligations-legales-de-debroussaillement/#presentation)
