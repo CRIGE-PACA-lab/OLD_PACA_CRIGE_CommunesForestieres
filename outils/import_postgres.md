@@ -18,7 +18,6 @@
 | BD_TOPO  | batiment         |    batiments | Bâtiments référencés dans la BD_TOPO. | Polygone
 | BD_TOPO  | batiment_rnb_lien_bdt          |    batiment_rnb_lien_bdt |Table pivôt entre les bâtiments de la BD_TOPO et les adresses du RNB. | Point
 | GPU  |           |   zoneu |  Zones classées U dans les documents d'urbanisme. | Polygone
-| Debroussaillement  | Debroussaillement_light          |  deb_ign | Zones soumises aux OLD(généralement 200 m autour des massifs forestiers). | Polygone
 | Cadastre  | parcelle          |    parcelles_vf | Parcelles cadastrales issu du plugin cadastre de Qgis. | Polygone 
 
 
@@ -43,3 +42,10 @@
 | ORE | reseau-aerien-moyenne-tension-hta          |    reseau-aerien-moyenne-tension-hta | Lignes éléctriques aériennes moyenne tension (entre 1 kV et 50 kV) | Ligne
 | Debroussaillement  | Debroussaillement_light          |  deb_ign | Zones soumises aux OLD(généralement 200 m autour des massifs forestiers). | Polygone
 | Cadastre  | parcelle          |    parcelles_vf | Parcelles cadastrales issu du plugin cadastre de Qgis. | Polygone 
+
+## 🌲 Forêt
+
+| Source  | Nom par défaut          | Nom d'import | Définition | Géométrie |
+| :---------: |:---------:| :----------:| :--------------------:| :---------:|
+| Debroussaillement  | Debroussaillement_light          |  deb_ign | Zones soumises aux OLD(généralement 200 m autour des massifs forestiers). | Polygone
+| BD_Forêt V3 | masque foret2.gpkg          |  bd_foret_fr | Masque forestier produit par l'IGN | Polygone

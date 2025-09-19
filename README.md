@@ -37,6 +37,7 @@ Dans le contexte actuel d'intensification des feux et de la propagation du risqu
 	- [Lignes électriques aériennes Basse Tension (BT)](https://opendata.agenceore.fr/explore/dataset/reseau-aerien-basse-tension-bt/information/?stage_theme=true&disjunctive.nom_grd&disjunctive.region&disjunctive.departement&disjunctive.epci)
 	- [Lignes électriques aériennes moyenne tension (HTA)](https://opendata.agenceore.fr/explore/dataset/reseau-aerien-moyenne-tension-hta/information/?stage_theme=true&disjunctive.nom_grd&disjunctive.epci&disjunctive.departement&disjunctive.region&disjunctive.commune)
 	- [Lignes électriques aériennes Haute Tension (HTB)](https://opendata.agenceore.fr/explore/dataset/reseau-aerien-haute-tension-htb/information/?stage_theme=true&disjunctive.nom_grd&disjunctive.departement&disjunctive.epci)
+- Masque forestier [BD_foret V3](https://data.geopf.fr/telechargement/download/BDFORET/MASQUEFORET__BETA_GPKG_LAMB93_FXX_2024-01-01/MASQUEFORET__BETA_GPKG_LAMB93_FXX_2024-01-01.7z) (format.gpkg)
 
 **Prérequis**
 

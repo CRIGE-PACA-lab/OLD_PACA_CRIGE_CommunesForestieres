@@ -221,6 +221,15 @@ SET deb_m = (larg_m*nb_voies)+7;
 
 DROP TABLE IF EXISTS "04".vf_temp;
 
+--- I-f. Table bd_foret ---
+
+Drop table if exists old_dep.bd_foret; 
+Create table old_dep.bd_foret as 
+select a.nature as nature,
+St_MemUnion(a.geom) as geom
+from old_dep.bd_foret_fr as a, old_dep.com as b 
+where st_intersects(a.geom,b.geom); 
+
 
 ---------------------------------------------------------------------------------------
 --- II. Modélisation des Obligations 									   	     	--- 
@@ -228,11 +237,11 @@ DROP TABLE IF EXISTS "04".vf_temp;
 --- Résumé : la modélisation des OLD se déroule en 3 grandes étapes (II-a) : 		---														 
 --- 1. Modélisation des OLD générées par les electriques : 							---
 ---		- Zone tampon de x m autour des lignes electriques 							---
----		- Découpage des OLD à l'intérieur du zonage OLD 						 	---
+---		- Découpage des OLD à l'intérieur du masque forestier    				 	---
 ---		- Intersection avec le cadastre 										 	---
 --- 2. Modélisation des OLD générées par les voies férrées (II-b) : 				---
 ---		-Zone tampon de x m + largeur de la voie autour des lignes de chemin de fer ---
----		- Découpage des OLD à l'intérieur du zonage OLD 						    ---
+---		- Découpage des OLD à l'intérieur du masque forestier + 20 m  			    ---
 ---		- Intersection avec le cadastre 											---
 --- 3. Aggrégation des deux couches OLD (II-c)     								    ---
 ---------------------------------------------------------------------------------------
@@ -243,7 +252,7 @@ drop table if exists "04".rte_ligne_temp;
 create table "04".rte_ligne_temp as 
 select a.id_ligne_elec as id_ligne_elec,
 st_buffer(a.geom,a.deb_m) as geom
-from "04".ligne_electrique  as a, "04".zonage_old as b 
+from "04".ligne_electrique  as a, "04".bd_foret as b 
 where st_intersects(a.geom,b.geom);
 
 CREATE INDEX ON "04".rte_ligne_temp USING GIST (geom);
@@ -251,7 +260,7 @@ CREATE INDEX ON "04".zonage_old USING GIST (geom);
 
 UPDATE "04".rte_ligne_temp as a
 set geom = st_intersection(a.geom,b.geom)
-from "04".zonage_old as b
+from "04".bd_foret as b
 where st_intersects(a.geom,b.geom);
 
 drop table if exists "04".rte_ligne2_temp;
@@ -289,15 +298,10 @@ from "04".vf_gl_temp as a, "04".cadastre as b
 where st_intersects(a.geom,b.geom);
 
 UPDATE "04".vf_gl_old_temp as a 
-set geom = st_intersection(a.geom,b.geom)
-from "04".zonage_old as b
+set geom = st_intersection(a.geom,st_buffer(b.geom,20))
+from "04".bd_foret as b
 where st_intersects(a.geom,b.geom);
 
-Drop table if exists "04".vf_gl_old_temp2;
-Create table "04".vf_gl_old_temp2 as
-select a.* 
-from "04".vf_gl_old_temp as a, "04".zonage_old as b
-where st_intersects(a.geom,b.geom);
 
 --- II-c. Aggrégation des OLD ---
 
