@@ -174,6 +174,8 @@ from "04"."reseau-aerien-haute-tension-ht";
 UPDATE "04".ligne_electrique AS a
 SET source = CASE WHEN voltage_kv is null then 'ore' else 'bd_topo' end;
 
+CREATE INDEX ON "04".ligne_electrique USING GIST (geom);
+
 DROP TABLE IF EXISTS "04"."reseau-aerien-haute-tension-ht"; 
 DROP TABLE IF EXISTS "04"."reseau-aerien-basse-tension-bt";
 DROP TABLE IF EXISTS "04"."reseau-aerien-moyenne-tension-hta";
@@ -219,16 +221,24 @@ from "04".vf_temp;
 UPDATE "04".voies_ferees
 SET deb_m = (larg_m*nb_voies)+7;
 
+CREATE INDEX ON "04".voies_ferees USING GIST (geom);
+
 DROP TABLE IF EXISTS "04".vf_temp;
 
 --- I-f. Table bd_foret ---
 
+----------------------------------------------------------------------------------------------------
+--- Importer dans le schéma le masque forestier de la bd forêt v3 sous l'intitulé 'masqueforet2' ---
+----------------------------------------------------------------------------------------------------
+
 Drop table if exists "04".bd_foret; 
 Create table "04".bd_foret as 
-select a.nature as nature,
+select 
 St_MemUnion(a.geom) as geom
 from "04".masqueforet2 as a, "04".com as b 
 where st_intersects(a.geom,b.geom); 
+
+CREATE INDEX ON "04".bd_foret USING GIST (geom);
 
 ---------------------------------------------------------------------------------------
 --- II. Modélisation des Obligations 									   	     	--- 
@@ -385,4 +395,5 @@ ALTER TABLE "04".controle
 add column id_obligation_gl INTEGER,
 add constraint obligations_gl
 foreign key(id_obligation_gl) references "04".obligations_gl(id_obligation); 
+
 
