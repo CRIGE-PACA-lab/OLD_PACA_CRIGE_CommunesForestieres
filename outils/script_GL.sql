@@ -223,13 +223,12 @@ DROP TABLE IF EXISTS "04".vf_temp;
 
 --- I-f. Table bd_foret ---
 
-Drop table if exists old_dep.bd_foret; 
-Create table old_dep.bd_foret as 
+Drop table if exists "04".bd_foret; 
+Create table "04".bd_foret as 
 select a.nature as nature,
 St_MemUnion(a.geom) as geom
-from old_dep.bd_foret_fr as a, old_dep.com as b 
+from "04".masqueforet2 as a, "04".com as b 
 where st_intersects(a.geom,b.geom); 
-
 
 ---------------------------------------------------------------------------------------
 --- II. Modélisation des Obligations 									   	     	--- 
@@ -386,3 +385,4 @@ ALTER TABLE "04".controle
 add column id_obligation_gl INTEGER,
 add constraint obligations_gl
 foreign key(id_obligation_gl) references "04".obligations_gl(id_obligation); 
+
