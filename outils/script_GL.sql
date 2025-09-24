@@ -286,11 +286,18 @@ where st_intersects(a.geom,b.geom);
 
 --- II-b. Voies férrées ---
 
+drop table if exists "04".bdforet20m;
+create table "04".bdforet20m as 
+select st_buffer(geom,20) as geom
+from "04".bd_foret;
+
+CREATE INDEX ON "04".bdforet20m USING GIST (geom);
+
 drop table if exists "04".vf_gl_temp;
 create table "04".vf_gl_temp as 
 select a.id_vf as id_vf,
 st_buffer(a.geom,(deb_m)) as geom
-from  "04".voies_ferees as a, "04".zonage_old as b 
+from  "04".voies_ferees as a, "04".bdforet20m as b 
 where st_intersects(a.geom,b.geom);
 
 CREATE INDEX ON "04".vf_gl_temp USING GIST (geom);
@@ -306,11 +313,12 @@ st_intersection(a.geom,b.geom) as geom
 from "04".vf_gl_temp as a, "04".cadastre as b
 where st_intersects(a.geom,b.geom);
 
+CREATE INDEX ON "04".vf_gl_old_temp USING GIST (geom);
+
 UPDATE "04".vf_gl_old_temp as a 
 set geom = st_intersection(a.geom,st_buffer(b.geom,20))
 from "04".bd_foret as b
 where st_intersects(a.geom,b.geom);
-
 
 --- II-c. Aggrégation des OLD ---
 
@@ -337,7 +345,7 @@ from "04".vf_gl_old_temp;
 
 insert into "04".obligations_gl(nom_prop,adresse_prop,comptcom_prop,geom,id_ligne_elec,geo_parcel)
 select nom_prop,adresse_prop,comptcom_prop,geom,id_ligne_elec,geo_parcel
-from "04".rte_ligne_temp;
+from "04".rte_ligne2_temp;
 
 UPDATE "04".obligations_gl
 SET surface_m2 = st_area(geom);
@@ -352,6 +360,7 @@ DROP TABLE IF EXISTS "04".vf_gl_old_temp;
 DROP TABLE IF EXISTS "04".vf_gl_old_temp2;
 DROP TABLE IF EXISTS "04".vf_gl_temp;
 DROP TABLE IF EXISTS "04".rte_pylone2_temp;
+DROP TABLE IF EXISTS "04".bdforet20m;
 
 
 ------------------------------------------------
@@ -395,6 +404,7 @@ ALTER TABLE "04".controle
 add column id_obligation_gl INTEGER,
 add constraint obligations_gl
 foreign key(id_obligation_gl) references "04".obligations_gl(id_obligation); 
+
 
 
 
