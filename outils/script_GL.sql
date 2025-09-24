@@ -333,11 +333,11 @@ CREATE TABLE "04".obligations_gl(
 
 INSERT INTO "04".obligations_gl(nom_prop,adresse_prop,comptcom_prop,geom,id_vf,geo_parcel)
 select nom_prop,adresse_prop,comptcom_prop,geom,id_vf,geo_parcel
-from "04".vf_gl_old_temp2;
+from "04".vf_gl_old_temp;
 
 insert into "04".obligations_gl(nom_prop,adresse_prop,comptcom_prop,geom,id_ligne_elec,geo_parcel)
 select nom_prop,adresse_prop,comptcom_prop,geom,id_ligne_elec,geo_parcel
-from "04".rte_ligne2_temp;
+from "04".rte_ligne_temp;
 
 UPDATE "04".obligations_gl
 SET surface_m2 = st_area(geom);
@@ -395,5 +395,6 @@ ALTER TABLE "04".controle
 add column id_obligation_gl INTEGER,
 add constraint obligations_gl
 foreign key(id_obligation_gl) references "04".obligations_gl(id_obligation); 
+
 
 
