@@ -29,7 +29,7 @@ Les outils mis à disposition dans ce dépôt permettent de monter un schéma Po
 
 **A voir également :**
 
-* [Outil OLD_50 m de cartographie et de gestion des superpositions](https://gitlab-forge.din.developpement-durable.gouv.fr/pub/dd/ddt-26-public/old50m)
+* [Outil OLD_50 m de cartographie et de gestion des superpositions, DDT26](https://gitlab-forge.din.developpement-durable.gouv.fr/pub/dd/ddt-26-public/old50m)
 * [Déploiement de l'outil sur le département des Alpes de Haute-Provence](https://lizmap.crige-paca.org/index.php/view/map?repository=projetold&project=old_04) 
 * [LOI n° 2023-580 du 10 juillet 2023 visant à renforcer la prévention et la lutte contre l'intensification et l'extension du risque incendie](https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047805414)
 * [Les OLD sur le site du CRIGE PACA](https://www.crige-paca.org/projet/obligations-legales-de-debroussaillement/#presentation)
@@ -39,3 +39,4 @@ Les outils mis à disposition dans ce dépôt permettent de monter un schéma Po
 
 
 ![crige_cofor](https://www.crige-paca.org/wp-content/uploads/2025/02/logo_crige_cofor.png)
+
