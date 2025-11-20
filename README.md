@@ -49,21 +49,12 @@ Dans le contexte actuel d'intensification des feux et de la propagation du risqu
 **Structure**
 
 Les outils mis à disposition dans ce dépôt permettent de monter un schéma PostgreSQL-PostGIS référençant les enjeux (constructions, infrastructures et réseaux) concernés par les OLD. 
-La procédure est divisée en 3 scripts qui peuvent être mobilisés séparément : 
+: 
 * 📂 MCD 
 	* MCD_OLD.sql : Modèle conceptuel de données (MCD) utilisables pour le montage d'une base de données OLD 
 	* MCD_OLD.pdf : Visualisation graphique du MCD
 	* script_wold50m2mcd.sql : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Commune seule.
 	* script_wold50m2mcd.py : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Groupe de communes.
-* 📂 Outils  
-	* 🏢 _script_bati.sql_ : OLD générées par la présence de bâtiments (bâtiments, campings, parcs photovoltaïques...).
-	* 🚗 _script_GL.sql_ : OLD générées par la présence d'infrastructures férroviaires ou du de transport d'éléctricité.
-	* 🚆⚡ _script_routes.sql_ : OLD générées par la présence d'infrastructures liées au réseau routier.
-
-Ces trois scripts permettent d'identifier les responsables de l'éxécution des OLD et les propriétés sur lesquelles ces dernières doivent être réalisées.
-Ces outils ne permettent pas d'identifier un responsable de l'éxécution des OLD dans le cas où plusieurs responsables potentiels seraient identifiés pour un même terrain. 
-
-Les résultats n'ont aucune valeur juridique ou contractuelle et ne sauraient se passer d'analyses terrain plus approfondies. 
 
 
 **A voir également :**
