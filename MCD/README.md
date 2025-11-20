@@ -26,6 +26,7 @@ Les outils mis à disposition dans ce dépôt permettent de monter un schéma Po
 	* [MCD_OLD.sql : Modèle conceptuel de données (MCD) utilisables pour le montage d'une base de données OLD](https://github.com/CRIGE-PACA-lab/OLD_PACA_CRIGE_CommunesForestieres/blob/main/MCD/MCD_OLD.sql)
 	* [MCD_OLD.pdf : Visualisation graphique du MCD](https://github.com/CRIGE-PACA-lab/OLD_PACA_CRIGE_CommunesForestieres/blob/main/MCD/MCD_OLD.pdf)
 	* [script_wold50m2mcd.sql : Conversion des couches "result_3" ou "result_4" en sortie de l'outil OLD50m (développé par la DDT26) au format du MCD](https://github.com/CRIGE-PACA-lab/OLD_PACA_CRIGE_CommunesForestieres/blob/main/MCD/script_wold50m2mcd.sql)
+	* script_wold50m2mcd.py : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Groupe de communes.
 
 **A voir également :**
 

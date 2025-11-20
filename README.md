@@ -53,7 +53,9 @@ La procédure est divisée en 3 scripts qui peuvent être mobilisés séparémen
 * 📂 MCD 
 	* MCD_OLD.sql : Modèle conceptuel de données (MCD) utilisables pour le montage d'une base de données OLD 
 	* MCD_OLD.pdf : Visualisation graphique du MCD
-* 📂 Scripts 
+	* script_wold50m2mcd.sql : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Commune seule.
+	* script_wold50m2mcd.py : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Groupe de communes.
+* 📂 Outils  
 	* 🏢 _script_bati.sql_ : OLD générées par la présence de bâtiments (bâtiments, campings, parcs photovoltaïques...).
 	* 🚗 _script_GL.sql_ : OLD générées par la présence d'infrastructures férroviaires ou du de transport d'éléctricité.
 	* 🚆⚡ _script_routes.sql_ : OLD générées par la présence d'infrastructures liées au réseau routier.
