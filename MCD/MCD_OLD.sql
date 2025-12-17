@@ -168,9 +168,7 @@ CREATE TABLE old_dep.ligne_electrique(
    geom GEOMETRY, --- Ligne
    id_zonage INT, --- Identifiant unique de la zone de débroussaillement 
    id_gest INT, --- Identifiant unique du gestionnaire
-   PRIMARY KEY(id_ligne_elec),
-   FOREIGN KEY(id_zonage) REFERENCES old_dep.zonage_old(id_zonage), --- Clé étangère : table zonage_old 
-   FOREIGN KEY(id_gest) REFERENCES old_dep.gestionnaire_grand_lineaires(id_gest) --- Clé étangère : gestionnaire_grand_lineaires
+   PRIMARY KEY(id_ligne_elec)
 );
 
 ---------------------
@@ -186,8 +184,7 @@ CREATE TABLE old_dep.Bati(
    nature VARCHAR(50), --- Nature du bâtiment
    geom GEOMETRY, --- Polygone
    id_zonage INT, --- Identifiant unique de la zone de débroussaillement 
-   PRIMARY KEY(ID_bati),
-   FOREIGN KEY(id_zonage) REFERENCES old_dep.zonage_old(id_zonage)  --- Clé étangère : table zonage_old 
+   PRIMARY KEY(ID_bati)
 );
 
 ---------------------------------
@@ -213,12 +210,7 @@ CREATE TABLE old_dep.obligations_bati(
    geo_parcel VARCHAR(50), --- Identifiant unique de la parcelle à débroussailler
    ID_bati INT, --- Identifiant unique du batiment
    ID_adresse INT, --- Identifiant unique de l'adresse 
-   PRIMARY KEY(id_obligation),
-   FOREIGN KEY(id_zone) REFERENCES old_dep.plu(id_zone), --- Clé étangère : table zonage_old 
-   FOREIGN KEY(geo_parcel) REFERENCES old_dep.cadastre(geo_parcel), --- Clé étangère : table cadastre
-   FOREIGN KEY(ID_bati) REFERENCES old_dep.Bati(ID_bati), --- Clé étangère : table bati
-   FOREIGN KEY(ID_adresse) REFERENCES old_dep.adresse(ID_adresse) --- Clé étangère : table adresse
-
+   PRIMARY KEY(id_obligation)
 );
 
 ---------------------
@@ -244,9 +236,7 @@ CREATE TABLE old_dep.routes(
    geom GEOMETRY, --- Ligne 
    id_gest INT, --- Identifiant du gestionnaie du tronçon 
    id_zonage INT, --- Identifiant unique de la zone de débroussaillement 
-   PRIMARY KEY(id_troncon),
-   FOREIGN KEY(id_gest) REFERENCES old_dep.gestionnaire(id_gest), --- Clé étangère : table gestionnaire
-   FOREIGN KEY(id_zonage) REFERENCES old_dep.zonage_old(id_zonage) --- Clé étangère : table zonage_old 
+   PRIMARY KEY(id_troncon)
 );
 
 -----------------------------------
@@ -264,9 +254,7 @@ CREATE TABLE old_dep.obligations_routes(
    surface_m2 DOUBLE, --- surface (en m2) à débroussailler
    id_troncon INT, --- Identifiant unique du tronçon
    geo_parcel VARCHAR(50), --- Identifiant unique de la parcelle
-   PRIMARY KEY(id_obligation),
-   FOREIGN KEY(id_troncon) REFERENCES old_dep.routes(id_troncon), --- Clé étangère : table routes
-   FOREIGN KEY(geo_parcel) REFERENCES old_dep.cadastre(geo_parcel) --- Clé étangère : table cadastre
+   PRIMARY KEY(id_obligation)
 );
 
 -----------------------------
@@ -289,9 +277,7 @@ CREATE TABLE old_dep.voies_ferees(
    geom GEOMETRY, --- Ligne
    id_gest INT, --- Identifiant unique du gestionnaire
    id_zonage INT, --- Identifiant unique de la zone de débroussaillement 
-   PRIMARY KEY(id_vf),
-   FOREIGN KEY(id_gest) REFERENCES old_dep.gestionnaire_grand_lineaires(id_gest), --- Clé étangère : table gestionnaire_grand_lineaires
-   FOREIGN KEY(id_zonage) REFERENCES old_dep.zonage_old(id_zonage) --- Clé étangère : table zonage_old
+   PRIMARY KEY(id_vf)
 );
 
 -------------------------------
@@ -310,10 +296,7 @@ CREATE TABLE old_dep.obligations_gl(
    id_vf INT, --- Identifiant unique du tronçon de voie férrée
    geo_parcel VARCHAR(50), --- Identifiant unique de la parcelle à débroussailler
    id_ligne_elec INT, --- Identifiant unique du tronçon de la ligne électrique
-   PRIMARY KEY(id_obligation),
-   FOREIGN KEY(id_vf) REFERENCES old_dep.voies_ferees(id_vf), --- Clé étrangère : table voies_ferees
-   FOREIGN KEY(geo_parcel) REFERENCES old_dep.cadastre(geo_parcel),  --- Clé étrangère : table cadastre
-   FOREIGN KEY(id_ligne_elec) REFERENCES old_dep.ligne_electrique(id_ligne_elec)  --- Clé étrangère : table ligne_electrique
+   PRIMARY KEY(id_obligation)
 );
 
 -------------------------------
@@ -340,10 +323,7 @@ CREATE TABLE old_dep.controle(
    id_obligation INT, --- Identifiant unique de l'obligation (bati)
    id_obligation_1 INT, --- Identifiant unique de l'obligation (routes)
    id_obligation_2 INT, --- Identifiant unique de l'obligation (grands linéaires)
-   PRIMARY KEY(Id_controle),
-   FOREIGN KEY(id_obligation) REFERENCES old_dep.obligations_bati(id_obligation), --- Clé étrangère : table obligations_bati
-   FOREIGN KEY(id_obligation_1) REFERENCES old_dep.obligations_routes(id_obligation), --- Clé étrangère : table obligations_routes
-   FOREIGN KEY(id_obligation_2) REFERENCES old_dep.obligations_gl(id_obligation) --- Clé étrangère : table obligations_gl
+   PRIMARY KEY(Id_controle)
 );
 
 --------------------------------------
@@ -356,9 +336,7 @@ CREATE TABLE old_dep.controle(
 CREATE TABLE old_dep.lien_poi_routes(
    id_troncon INT, --- Identifiant unique du tronçon de route
    id_pt INT, --- Identifiant unique du point de repère
-   PRIMARY KEY(id_troncon, id_pt),
-   FOREIGN KEY(id_troncon) REFERENCES old_dep.routes(id_troncon), --- Clé étrangère : table routes
-   FOREIGN KEY(id_pt) REFERENCES old_dep.Point_de_repère(id_pt)  --- Clé étrangère : table point_de_repere
+   PRIMARY KEY(id_troncon, id_pt)
 );
 
 --------------------------------------
@@ -371,7 +349,5 @@ CREATE TABLE old_dep.lien_poi_routes(
 CREATE TABLE old_dep.gestionnaire_prive(
    geo_parcel VARCHAR(50), --- Identifiant unique de la parcelle
    id_gest SERIAL, --- Identifiant unique du gestionnaire. Serial nécéssaire pour la création de nouveaux gestionnaires. 
-   PRIMARY KEY(geo_parcel, id_gest),
-   FOREIGN KEY(geo_parcel) REFERENCES old_dep.cadastre(geo_parcel), --- Clé étrangère : table cadastre
-   FOREIGN KEY(id_gest) REFERENCES old_dep.gestionnaire(id_gest) --- Clé étrangère : table gestionnaire
+   PRIMARY KEY(geo_parcel, id_gest)
 );

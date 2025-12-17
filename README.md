@@ -19,12 +19,7 @@ Dans le contexte actuel d'intensification des feux et de la propagation du risqu
 	- batiment_rnb_lien_bdtopo
 	- troncon_de_route
 	- troncon_de_voie_ferre  
-- [Base Nationale des Batiments (BDNB)](https://bdnb.io/download/) (format .gpkg) avec les couches 
-	- bdnb — rel_batiment_groupe_bdtopo_bat
-	- bdnb — rel_batiment_groupe_parcelle
-	- bdnb — rel_batiment_groupe_adresse
-	- bdnb — adresse_compile
-- [Référentiel National des bâtiments (RNB)](https://www.data.gouv.fr/fr/organizations/referentiel-national-des-batiments/#/datasets)
+	- Lignes électriques aériennes Haute Tension (HTB)
 - [BAN PLUS](https://geoservices.ign.fr/ban-plus) avec les couches
 	- adresse
 	- lien_bati-parcelle
@@ -44,8 +39,6 @@ Dans le contexte actuel d'intensification des feux et de la propagation du risqu
 * QGIS avec l'extension Cadastre
 * PostgrSQL avec l'extension PostGIS 
 
-⚠️ Avant de lancer les scripts, veuillez vous référer au document [import2postgres.md](https://github.com/CRIGE-PACA-lab/OLD_crige/blob/main/import_postgres.md)
-
 **Structure**
 
 Les outils mis à disposition dans ce dépôt permettent de monter un schéma PostgreSQL-PostGIS référençant les enjeux (constructions, infrastructures et réseaux) concernés par les OLD. 
@@ -55,6 +48,10 @@ Les outils mis à disposition dans ce dépôt permettent de monter un schéma Po
 	* MCD_OLD.pdf : Visualisation graphique du MCD
 	* script_wold50m2mcd.sql : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Commune seule.
 	* script_wold50m2mcd.py : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Groupe de communes.
+* 📂 post_traitement 
+	* script_GL.sql : Modélisation des OLD générées par les voies férrées et les infrastructure de transport d'éléctricité
+	* script_routes.sql : Modélisation des OLD générées par les voies ouvertes à la circulation publique
+	* gestionnaire_gl.csv : Fichier-type listant les gestionnaires de grands linéaires mis à disposition par le CRIGE PACA. Peut être utilisé pour le montage de la base de données.
 
 
 **A voir également :**
