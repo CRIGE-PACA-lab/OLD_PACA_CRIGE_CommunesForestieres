@@ -12,6 +12,25 @@ Dans le contexte actuel d'intensification des feux et de la propagation du risqu
 * Suivre l’état d’embroussaillement et les travaux engagés sur les propriétés concernées.
 * Faire connaître les outils permettant de cartographier les OLD. 
 
+**Prérequis**
+
+* QGIS avec l'extension Cadastre
+* PostgrSQL avec l'extension PostGIS 
+
+**Structure**
+
+Les outils mis à disposition dans ce dépôt permettent de monter un schéma PostgreSQL-PostGIS référençant les enjeux (constructions, infrastructures et réseaux) concernés par les OLD. 
+: 
+* 📂 MCD 
+	* MCD_OLD.sql : Modèle conceptuel de données (MCD) utilisables pour le montage d'une base de données OLD 
+	* MCD_OLD.pdf : Visualisation graphique du MCD
+	* script_wold50m2mcd.sql : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Commune seule.
+	* script_wold50m2mcd.py : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Groupe de communes.
+* 📂 post_traitement 
+	* script_GL.sql : Modélisation des OLD générées par les voies férrées et les infrastructure de transport d'éléctricité
+	* script_routes.sql : Modélisation des OLD générées par les voies ouvertes à la circulation publique
+	* gestionnaire_gl.csv : Fichier-type listant les gestionnaires de grands linéaires mis à disposition par le CRIGE PACA. Peut être utilisé pour le montage de la base de données.
+
 **Données requises**
 
 - [BD_TOPO](https://geoservices.ign.fr/bdtopo#telechargementgpkgdep) (format .gpkg) avec les couches 
@@ -33,26 +52,6 @@ Dans le contexte actuel d'intensification des feux et de la propagation du risqu
 	- [Lignes électriques aériennes moyenne tension (HTA)](https://opendata.agenceore.fr/explore/dataset/reseau-aerien-moyenne-tension-hta/information/?stage_theme=true&disjunctive.nom_grd&disjunctive.epci&disjunctive.departement&disjunctive.region&disjunctive.commune)
 	- [Lignes électriques aériennes Haute Tension (HTB)](https://opendata.agenceore.fr/explore/dataset/reseau-aerien-haute-tension-htb/information/?stage_theme=true&disjunctive.nom_grd&disjunctive.departement&disjunctive.epci)
 - Masque forestier [BD_foret V3](https://data.geopf.fr/telechargement/download/BDFORET/MASQUEFORET__BETA_GPKG_LAMB93_FXX_2024-01-01/MASQUEFORET__BETA_GPKG_LAMB93_FXX_2024-01-01.7z) (format.gpkg)
-
-**Prérequis**
-
-* QGIS avec l'extension Cadastre
-* PostgrSQL avec l'extension PostGIS 
-
-**Structure**
-
-Les outils mis à disposition dans ce dépôt permettent de monter un schéma PostgreSQL-PostGIS référençant les enjeux (constructions, infrastructures et réseaux) concernés par les OLD. 
-: 
-* 📂 MCD 
-	* MCD_OLD.sql : Modèle conceptuel de données (MCD) utilisables pour le montage d'une base de données OLD 
-	* MCD_OLD.pdf : Visualisation graphique du MCD
-	* script_wold50m2mcd.sql : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Commune seule.
-	* script_wold50m2mcd.py : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Groupe de communes.
-* 📂 post_traitement 
-	* script_GL.sql : Modélisation des OLD générées par les voies férrées et les infrastructure de transport d'éléctricité
-	* script_routes.sql : Modélisation des OLD générées par les voies ouvertes à la circulation publique
-	* gestionnaire_gl.csv : Fichier-type listant les gestionnaires de grands linéaires mis à disposition par le CRIGE PACA. Peut être utilisé pour le montage de la base de données.
-
 
 **A voir également :**
 
