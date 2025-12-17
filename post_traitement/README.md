@@ -29,8 +29,8 @@ Les scripts doivent être exécutés avec un utilisateur disposant des droits de
 
 | Source  | Nom par défaut    | Schéma d'import | Nom d'import | Définition | Géométrie | 
 | :---------: |:---------:| :----------:| :--------------------:| :---------:| :---------:|
-| [Debroussaillement (https://geoservices.ign.fr/telechargement-api/DEBROUSSAILLEMENT?format=GPKG)]  | Debroussaillement         | public | old200m | Zones soumises aux OLD(généralement 200 m autour des massifs forestiers). | Polygone
-| [Cadastre (https://www.crige-paca.org/)]  | parcelle          | r_cadastre  | parcelles_info | Parcelles cadastrales issu du plugin cadastre de Qgis. (⚠️ réservé aux ayant droit) | Polygone 
+| [Debroussaillement] (https://geoservices.ign.fr/telechargement-api/DEBROUSSAILLEMENT?format=GPKG)  | Debroussaillement         | public | old200m | Zones soumises aux OLD(généralement 200 m autour des massifs forestiers). | Polygone
+| [Cadastre] (https://www.crige-paca.org/)  | parcelle          | r_cadastre  | parcelles_info | Parcelles cadastrales issu du plugin cadastre de Qgis. (⚠️ réservé aux ayant droit) | Polygone 
 | [BD_TOPO (format .gpkg)](https://geoservices.ign.fr/telechargement-api/BDTOPO?format=GPKG) | commune          |  r_bdtopo  |  commune | Table des communes permettant de stocker certaines particularités (extension de la profondeur des débroussaillement, dérrogations, niveaux de risques fixé par l'arrêté ...). | Polygone
 | [BD_Foret (format .gpkg)](https://geoservices.ign.fr/telechargement-api/BDFORET) | FORMATION_VEGETALE          |  r_bdtopo  |  bd_foret | Contours forestiers | Polygone
 
