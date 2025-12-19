@@ -29,6 +29,7 @@ Les outils mis à disposition dans ce dépôt permettent de monter un schéma Po
 * 📂 post_traitement 
 	* script_GL.sql : Modélisation des OLD générées par les voies férrées et les infrastructure de transport d'éléctricité
 	* script_routes.sql : Modélisation des OLD générées par les voies ouvertes à la circulation publique
+	* script_adresse.sql : Ajouter l'adresse de l'obligé 
 	* gestionnaire_gl.csv : Fichier-type listant les gestionnaires de grands linéaires mis à disposition par le CRIGE PACA. Peut être utilisé pour le montage de la base de données.
 
 **Données requises**
@@ -42,7 +43,6 @@ Les outils mis à disposition dans ce dépôt permettent de monter un schéma Po
 - [BAN PLUS](https://geoservices.ign.fr/ban-plus) avec les couches
 	- adresse
 	- lien_bati-parcelle
-	- lien_adresse-bati
 - [Fichiers fonciers MAJIC](https://www.crige-paca.org/services/extractions/) (⚠️ réservé aux ayant droit)
 - [Zonage OLD](https://geoservices.ign.fr/debroussaillement)
 - [Documents d'urbanisme](https://www.geoportail-urbanisme.gouv.fr/map/#tile=1&lon=2.424722&lat=46.76305599999998&zoom=6)
