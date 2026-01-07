@@ -36,10 +36,11 @@
 
 | Source  | Nom par défaut          | Nom d'import | Définition | Géométrie |
 | :---------: |:---------:| :----------:| :--------------------:| :---------:|
-| BD_TOPO  | roncon_de_voie_ferre      |    vf_temp | Tronçon de voies férrées référencés dans la BD_TOPO. | Ligne 
+| BD_TOPO  | troncon_de_voie_ferre      |    vf_temp | Tronçon de voies férrées référencés dans la BD_TOPO. | Ligne 
 | BD_TOPO | commune          |    commune | Table des communes permettant de stocker certaines particularités (extension de la profondeur des débroussaillement, dérrogations, niveaux de risques fixé par l'arrêté ...). | Polygone
 | ORE | reseau-aerien-haute-tension-ht          |    reseau-aerien-haute-tension-ht | Lignes éléctriques aériennes haute tension (50 kV et plus) | Ligne
 | ORE | reseau-aerien-basse-tension-bt          |    reseau-aerien-basse-tension-bt | Lignes éléctriques aériennes basse tension (entre 230 et 380 V) | Ligne
 | ORE | reseau-aerien-moyenne-tension-hta          |    reseau-aerien-moyenne-tension-hta | Lignes éléctriques aériennes moyenne tension (entre 1 kV et 50 kV) | Ligne
 | Debroussaillement  | Debroussaillement_light          |  deb_ign | Zones soumises aux OLD(généralement 200 m autour des massifs forestiers). | Polygone
+
 | Cadastre  | parcelle          |    parcelles_vf | Parcelles cadastrales issu du plugin cadastre de Qgis. | Polygone 
