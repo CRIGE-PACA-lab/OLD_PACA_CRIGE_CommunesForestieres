@@ -21,7 +21,7 @@
 --*------------------------------------------------------------------------------------------------------------------------------------------------*--
 
 ------------------------------------------------------------------------------------------------------------------
-----   Remplacer "83XXX" par le code INSEE de la commune                                                      ----
+----   Remplacer "26XXX" par le code INSEE de la commune                                                      ----
 ----   Remplacer "AA" par le code INSEE du Département         												  ----
 ------------------------------------------------------------------------------------------------------------------
 
@@ -32,6 +32,7 @@
 
 DROP SCHEMA IF EXISTS "AA_adresse";
 CREATE SCHEMA "AA_adresse";
+COMMIT;
 
 --*------------------------------------------------------------------------------------------------------------*--
 
@@ -39,9 +40,11 @@ CREATE SCHEMA "AA_adresse";
 
 ALTER TABLE r_bdtopo."lien_adresse-parcelle"
 ADD COLUMN idu_cadastre VARCHAR; 
+COMMIT;
 
 UPDATE r_bdtopo."lien_adresse-parcelle"
 SET idu_cadastre = concat(left("IDU",2),'0',right("IDU",12));
+COMMIT;
 
 DROP TABLE IF EXISTS "AA_adresse".adresse_parcelle1; 
 CREATE TABLE "AA_adresse".adresse_parcelle1 AS 
@@ -50,6 +53,7 @@ a.comptecommunal,
 b."ID_ADR"
 FROM r_cadastre.parcelle_info as a, r_bdtopo."lien_adresse-parcelle" as b 
 WHERE a.geo_parcelle = b."IDU"; 
+COMMIT;
 
 --*------------------------------------------------------------------------------------------------------------*--
 
@@ -67,23 +71,27 @@ b."NOM_COM" as nom_com,
 b."POSITION" as position 
 FROM "AA_adresse".adresse_parcelle1 as a, r_bdtopo.adresse as b 
 WHERE a."ID_ADR" = b."ID_ADR"; 
+COMMIT;
 
 ALTER TABLE "AA_adresse".adresse_parcelle2 
 ADD COLUMN adresse_concat TEXT;
+COMMIT;
 
 UPDATE "AA_adresse".adresse_parcelle2
 SET adresse_concat = concat(case 
 when numero = '0' or numero = '99999' then null 
 else numero end,' ',rep,' ',nom_voie,' ',insee_com,' ',nom_com);
+COMMIT;
 
 --*------------------------------------------------------------------------------------------------------------*--
 
 --- Insertion de l'adresse dans la table de résultats ---
 
-UPDATE "83_old50m_resultat"."83XXX_result_final_mcd" AS a 
+UPDATE "26_old50m_resultat"."83XXX_result_final_mcd" AS a 
 SET obl_adresse = b.adresse_concat
 FROM "AA_adresse".adresse_parcelle2 as b
 WHERE a.obl_comptcom = b.comptecommunal;
+COMMIT;
 
 --*-----------------------------------------------------------------------------------------------------------*--
 --*-----------------------------------------------------------------------------------------------------------*--
