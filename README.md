@@ -19,19 +19,21 @@ Dans le contexte actuel d'intensification des feux et de la propagation du risqu
 
 **Structure**
 
-Les outils mis à disposition dans ce dépôt permettent de monter un schéma PostgreSQL-PostGIS référençant les enjeux (constructions, infrastructures et réseaux) concernés par les OLD. 
+Les outils mis à disposition dans ce dépôt permettent d'enrichir les [résultats de l'outil OLD50m](https://gitlab-forge.din.developpement-durable.gouv.fr/pub/dd/ddt-26-public/old50m) afin de monter une base de données des débroussaillements  : 
 : 
-* 📂 MCD 
-	* MCD_OLD.sql : Modèle conceptuel de données (MCD) utilisables pour le montage d'une base de données OLD 
-	* MCD_OLD.pdf : Visualisation graphique du MCD
-	* script_wold50m2mcd.sql : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Commune seule.
-	* script_wold50m2mcd.py : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Groupe de communes.
-* 📂 post_traitement 
-	* script_GL.sql : Modélisation des OLD générées par les voies férrées et les infrastructure de transport d'éléctricité
-	* script_routes.sql : Modélisation des OLD générées par les voies ouvertes à la circulation publique
-	* script_adresse.sql : Ajouter l'adresse de l'obligé 
-	* gestionnaire_gl.csv : Fichier-type listant les gestionnaires de grands linéaires mis à disposition par le CRIGE PACA. Peut être utilisé pour le montage de la base de données.
 
+	
+* 📂 1_post_traitement 
+	* 1_script_wold50m2mcd.sql : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Commune par commune.
+	* 1_script_wold50m2mcd.py : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Automatisation sur plusieurs communes.
+	* 2_script_adresse.sql : Ajouter l'adresse de l'obligé 
+	* 3_script_GL.sql : Modélisation des OLD générées par les voies férrées et les infrastructure de transport d'éléctricité
+	* 4_script_routes.sql : Modélisation des OLD générées par les voies ouvertes à la circulation publique
+	* gestionnaire_gl.csv : Fichier-type listant les gestionnaires de grands linéaires mis à disposition par le CRIGE PACA. Peut être utilisé pour le montage de la base de données.
+	
+* 📂 2_MCD 
+	* MCD_OLD.pdf : Proposition de MCD
+	
 **Données requises**
 
 - [BD_TOPO](https://geoservices.ign.fr/bdtopo#telechargementgpkgdep) (format .gpkg) avec les couches 
