@@ -46,11 +46,11 @@ COMMIT;
 --- Table routes ---
 
 ALTER TABLE r_bdtopo.troncon_de_route
-ADD COLUMN id_zonage INTEGER; 
+ADD COLUMN IF NOT EXISTS id_zonage INTEGER; 
 COMMIT;
 
 UPDATE r_bdtopo.troncon_de_route as a 
-SET id_zonage = b.id_zonage
+SET id_zonage = b.fid
 from public.old200m as b 
 where st_intersects(a.geom,b.geom);
 COMMIT; 
@@ -79,7 +79,7 @@ COMMIT;
 insert into "04_routes".routes(id_bdtopo,nature,importance, nom_voie, cpx_numero, cpx_classement_administratif, cpx_gestionnaire,geom,id_zonage)
 select cleabs,nature,importance, cpx_toponyme_route_nommee, cpx_numero,cpx_classement_administratif , cpx_gestionnaire,geom,id_zonage
 from r_bdtopo.troncon_de_route
-where acces_vehicule_leger = 'Libre', acces_vehicule_leger = 'A préage' ; --- Seulement les routes ouvertes à la circulation
+where acces_vehicule_leger = 'Libre' or acces_vehicule_leger = 'A préage' ; --- Seulement les routes ouvertes à la circulation
 COMMIT;
 
 CREATE INDEX ON "04_routes".routes USING GIST (geom);
@@ -237,5 +237,6 @@ COMMIT;
 
 DROP SCHEMA "04_routes" CASCADE;
 COMMIT;
+
 
 
