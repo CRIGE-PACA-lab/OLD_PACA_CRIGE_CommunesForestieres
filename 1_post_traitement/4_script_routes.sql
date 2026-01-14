@@ -143,19 +143,19 @@ set statut = case when nom_gest = 'Alpes-de-Haute-Provence'
 				end ;
 COMMIT;
 
-UPDATE "XX_old50m_resultat".routes as a 
+UPDATE "04_routes".routes as a 
 SET id_gest = b.id_gest
 from "XX_old50m_resultat".gestionnaire as b
 where a.cpx_gestionnaire = b.nom_gest;
 COMMIT;
 
 UPDATE "04_routes".routes 
-SET cpx_gestionnaire = case when cpx_gestionnaire is null then gest_desserte 
-					   when  cpx_gestionnaire is null and prive = true then 'prive'
+SET cpx_gestionnaire = case 
+					   when  cpx_gestionnaire is null then 'prive'
 					   else cpx_gestionnaire end,
 	deb_m = case when cpx_classement_administratif =  'Autoroute/Route nommée'  then 20 
  				 when cpx_classement_administratif = 'Départementale' or cpx_classement_administratif = 'Départementale/Route nommée'  then 10
-  				 when cpx_classement_administratif = 'Nationale' or cpx_classement_administratif = 'Nationale/Route nommée' and  risque =  'tres fort'  then 10
+  				 when cpx_classement_administratif = 'Nationale' or cpx_classement_administratif = 'Nationale/Route nommée'  then 10
  				 else 5 end ;
 COMMIT;
 
@@ -217,8 +217,8 @@ CREATE TABLE "XX_old50m_resultat".obligations_routes(
 );
 COMMIT;
 
-INSERT INTO "XX_old50m_resultat".obligations_routes(geom,comptcom_prop,nom_prop,adresse_prop,surface_m2,id_troncon,geo_parcel)
-select geom,comptcom_prop,nom_prop,adresse_prop,surf_m2,id_troncon,geo_parcelle
+INSERT INTO "XX_old50m_resultat".obligations_routes(geom,comptcom_prop,nom_prop,adresse_prop,id_troncon,geo_parcel)
+select geom,comptcom_prop,nom_prop,adresse_prop,id_troncon,geo_parcelle
 from "04_routes".old_route_temp2;
 COMMIT;
 
@@ -237,6 +237,7 @@ COMMIT;
 
 DROP SCHEMA "04_routes" CASCADE;
 COMMIT;
+
 
 
 
