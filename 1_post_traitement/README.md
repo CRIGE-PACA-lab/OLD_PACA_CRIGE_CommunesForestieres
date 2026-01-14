@@ -49,7 +49,7 @@ Les scripts doivent être exécutés avec un utilisateur disposant des droits de
 | Source  | Nom par défaut          | Schéma d'import  | Nom d'import | Définition | Géométrie |
 | :---------: | :---------: |:---------:| :----------:| :--------------------:| :---------:|
 | [BD_TOPO (format .gpkg)](https://geoservices.ign.fr/telechargement-api/BDTOPO?format=GPKG)  | troncon_de_voie_ferre  | r_bdtopo     |    troncon_de_voie_ferre | Tronçon de voies férrées référencés dans la BD_TOPO. | Ligne 
-| [BD_TOPO (format .gpkg)](https://geoservices.ign.fr/telechargement-api/BDTOPO?format=GPKG) | ligne_electrique       | r_bdtopo  |    ligne_electrique | Lignes éléctriques aériennes haute tension (50 kV et plus) | Ligne
+| [BD_TOPO (format .gpkg)](https://geoservices.ign.fr/telechargement-api/BDTOPO?format=GPKG) | ligne_electrique       | r_bdtopo  |    reseau-aerien-haute-tension-ht | Lignes éléctriques aériennes haute tension (50 kV et plus) | Ligne
 | [ORE](https://portail.agenceore.fr/pages/explore?explorepath=datasets%2Freseau-aerien-basse-tension-bt&stage_theme=true&disjunctive.nom_grd&disjunctive.region&disjunctive.departement&disjunctive.epci) | reseau-aerien-basse-tension-bt | r_bdtopo         |    reseau-aerien-basse-tension-bt | Lignes éléctriques aériennes basse tension (entre 230 et 380 V) | Ligne
 | [ORE](https://portail.agenceore.fr/pages/explore?explorepath=datasets%2Freseau-aerien-moyenne-tension-hta&stage_theme=true&disjunctive.nom_grd&disjunctive.epci&disjunctive.departement&disjunctive.region&disjunctive.commune) | reseau-aerien-moyenne-tension-hta   | r_bdtopo       |    reseau-aerien-moyenne-tension-hta | Lignes éléctriques aériennes moyenne tension (entre 1 kV et 50 kV) | Ligne
 
@@ -62,5 +62,6 @@ Les scripts doivent être exécutés avec un utilisateur disposant des droits de
 | [BAN_PLUS](https://geoservices.ign.fr/ban-plus#telechargement) | Lien adresse-parcelle        | r_bdtopo  |   lien_adresse-parcelle | Couche permettant de relier le point d'adresse à la parcelle adréssée | Ligne
 
 Toutes les couches doivent être en système de coordonnées Lambert-93 (EPSG:2154).
+
 
 
