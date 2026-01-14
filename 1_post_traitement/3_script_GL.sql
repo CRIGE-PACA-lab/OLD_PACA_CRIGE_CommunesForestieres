@@ -89,21 +89,21 @@ ALTER COLUMN geom TYPE geometry(Geometry, 2154) USING ST_SetSRID(geom, 2154);
 COMMIT;
 
 ALTER TABLE r_bdtopo."reseau-aerien-basse-tension-bt"
-ADD COLUMN id_gest INTEGER,
-ADD COLUMN id_zonage INTEGER,		
-ADD COLUMN deb_m INTEGER; 
+ADD COLUMN IF NOT EXISTS id_gest INTEGER,
+ADD COLUMN IF NOT EXISTS id_zonage INTEGER,		
+ADD COLUMN IF NOT EXISTS deb_m INTEGER; 
 COMMIT;
 
 ALTER TABLE r_bdtopo."reseau-aerien-moyenne-tension-hta"
-ADD COLUMN id_gest INTEGER,
-ADD COLUMN id_zonage INTEGER,
-ADD COLUMN deb_m INTEGER;
+ADD COLUMN IF NOT EXISTS id_gest INTEGER,
+ADD COLUMN IF NOT EXISTS id_zonage INTEGER,
+ADD COLUMN IF NOT EXISTS deb_m INTEGER;
 COMMIT;
 
 ALTER TABLE r_bdtopo."reseau-aerien-haute-tension-ht"
-ADD COLUMN id_gest INTEGER,
-ADD COLUMN id_zonage INTEGER,
-ADD COLUMN deb_m INTEGER; 
+ADD COLUMN IF NOT EXISTS id_gest INTEGER,
+ADD COLUMN IF NOT EXISTS id_zonage INTEGER,
+ADD COLUMN IF NOT EXISTS deb_m INTEGER; 
 COMMIT;
 
 UPDATE r_bdtopo."reseau-aerien-basse-tension-bt"
@@ -125,20 +125,20 @@ deb_m = case when voltage = '400 kV' then 40 else 20 end;
 COMMIT;
 
 UPDATE r_bdtopo."reseau-aerien-basse-tension-bt" as a 
-SET id_zonage = b.id_zonage
-from r_bdtopo.zonage_old as b
+SET id_zonage = b.fid
+from  public.old200m  as b
 where st_within(a.geom,b.geom); 
 COMMIT;
 
 UPDATE r_bdtopo."reseau-aerien-moyenne-tension-hta" as a 
-SET id_zonage = b.id_zonage
-from r_bdtopo.zonage_old as b
+SET id_zonage = b.fid
+from public.old200m as b
 where st_within(a.geom,b.geom); 
 COMMIT;
 
 UPDATE r_bdtopo."reseau-aerien-haute-tension-ht" as a 
-SET id_zonage = b.id_zonage
-from r_bdtopo.zonage_old as b
+SET id_zonage = b.fid
+from public.old200m as b
 where st_within(a.geom,b.geom); 
 COMMIT;
 
@@ -193,8 +193,8 @@ ADD COLUMN id_zonage INT;
 COMMIT;
 
 UPDATE r_bdtopo.vf_temp as a 
-SET id_zonage = b.id_zonage
-from r_bdtopo.zonage_old as b
+SET id_zonage = b.fid
+from public.old200m as b
 where st_intersects(a.geom,b.geom); 
 COMMIT;
 
@@ -409,5 +409,6 @@ COMMIT;
 
 DROP SCHEMA "04_gl" CASCADE;
 COMMIT;
+
 
 
