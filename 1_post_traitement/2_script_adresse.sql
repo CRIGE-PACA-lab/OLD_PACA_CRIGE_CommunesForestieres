@@ -87,7 +87,7 @@ COMMIT;
 
 --- Insertion de l'adresse dans la table de résultats ---
 
-UPDATE "26_old50m_resultat"."83XXX_result_final_mcd" AS a 
+UPDATE "26_old50m_resultat"."26XXX_result_final_mcd" AS a 
 SET obl_adresse = b.adresse_concat
 FROM "AA_adresse".adresse_parcelle2 as b
 WHERE a.obl_comptcom = b.comptecommunal;
@@ -108,6 +108,7 @@ COMMIT;
 
 DROP SCHEMA "AA_adresse" CASCADE;
 COMMIT;
+
 
 
 
