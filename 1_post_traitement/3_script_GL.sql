@@ -179,10 +179,6 @@ COMMIT;
 CREATE INDEX ON r_bdtopo.ligne_electrique USING GIST (geom);
 COMMIT;
 
-DROP TABLE IF EXISTS r_bdtopo."reseau-aerien-haute-tension-ht"; 
-DROP TABLE IF EXISTS r_bdtopo."reseau-aerien-basse-tension-bt";
-DROP TABLE IF EXISTS r_bdtopo."reseau-aerien-moyenne-tension-hta";
-
 --*------------------------------------------------------------------------------------------------------------*--
 
 --- Table voies_ferees ---
@@ -374,20 +370,20 @@ CREATE TABLE "XX_old50m_resultat".obligations_gl(
    surface_m2 FLOAT,
    geom GEOMETRY,
    id_vf INT,
-   geo_parcel VARCHAR(50),
+   geo_parcelle VARCHAR(50),
    id_infra_pt INT,
    id_ligne_elec INT,
    PRIMARY KEY(id_obligation)
    );
 COMMIT;
 
-INSERT INTO "XX_old50m_resultat".obligations_gl(nom_prop,adresse_prop,comptcom_prop,geom,id_vf,geo_parcel)
-select nom_prop,adresse_prop,comptcom_prop,geom,id_vf,geo_parcel
+INSERT INTO "XX_old50m_resultat".obligations_gl(nom_prop,adresse_prop,comptcom_prop,geom,id_vf,geo_parcelle)
+select nom_prop,adresse_prop,comptcom_prop,geom,id_vf,geo_parcelle
 from "04_gl".vf_gl_old_temp;
 COMMIT;
 
-insert into "XX_old50m_resultat".obligations_gl(nom_prop,adresse_prop,comptcom_prop,geom,id_ligne_elec,geo_parcel)
-select nom_prop,adresse_prop,comptcom_prop,geom,id_ligne_elec,geo_parcel
+insert into "XX_old50m_resultat".obligations_gl(nom_prop,adresse_prop,comptcom_prop,geom,id_ligne_elec,geo_parcelle)
+select nom_prop,adresse_prop,comptcom_prop,geom,id_ligne_elec,geo_parcelle
 from "04_gl".rte_ligne2_temp;
 COMMIT;
 
@@ -413,6 +409,7 @@ COMMIT;
 
 DROP SCHEMA "04_gl" CASCADE;
 COMMIT;
+
 
 
 
