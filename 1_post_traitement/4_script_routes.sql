@@ -37,7 +37,7 @@
 --- Création du schéma ---
 -----------------------------------------------------
 
-DROP SCHEMA IF EXISTS "04_routes";
+DROP SCHEMA IF EXISTS "04_routes" CASCADE;
 CREATE SCHEMA "04_routes";
 COMMIT;
 
@@ -237,6 +237,7 @@ COMMIT;
 
 DROP SCHEMA "04_routes" CASCADE;
 COMMIT;
+
 
 
 
