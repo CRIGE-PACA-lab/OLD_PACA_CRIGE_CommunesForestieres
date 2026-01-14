@@ -187,20 +187,27 @@ DROP TABLE IF EXISTS r_bdtopo."reseau-aerien-moyenne-tension-hta";
 
 --- Table voies_ferees ---
 
-ALTER TABLE r_bdtopo.vf_temp
-ADD COLUMN id_gest INT,
-ADD COLUMN id_zonage INT; 
+ALTER TABLE r_bdtopo.troncon_de_voie_ferree
+ADD COLUMN IF NOT EXISTS id_gest INT,
+ADD COLUMN IF NOT EXISTS id_zonage INT,
+ADD COLUMN IF NOT EXISTS larg_m INT; 
 COMMIT;
 
-UPDATE r_bdtopo.vf_temp as a 
+UPDATE r_bdtopo.troncon_de_voie_ferree as a 
 SET id_zonage = b.fid
 from public.old200m as b
 where st_intersects(a.geom,b.geom); 
 COMMIT;
 
-UPDATE r_bdtopo.vf_temp 
-SET id_gest = CASE WHEN "LARGEUR" = 'Etroite' THEN 18
-WHEN "LARGEUR" = 'Normale' then 15
+UPDATE r_bdtopo.troncon_de_voie_ferree 
+SET id_gest = CASE WHEN largeur = 'Etroite' THEN 18
+WHEN largeur = 'Normale' then 15
+else null end; 
+COMMIT;
+
+UPDATE r_bdtopo.troncon_de_voie_ferree  
+SET larg_m = CASE WHEN largeur = 'Etroite' THEN 1
+WHEN largeur = 'Normale' then 1.435
 else null end; 
 COMMIT;
 
@@ -208,7 +215,7 @@ DROP TABLE IF EXISTS r_bdtopo.voies_ferees;
 CREATE TABLE r_bdtopo.voies_ferees(
    id_vf SERIAL,
    id_bdtopo VARCHAR(50),
-   largeur INT,
+   larg_m INT,
    nb_voies INT, 
    deb_m FLOAT(50),
    source VARCHAR(50),
@@ -219,9 +226,9 @@ CREATE TABLE r_bdtopo.voies_ferees(
 );
 COMMIT;
 
-INSERT INTO r_bdtopo.voies_ferees(id_bdtopo,largeur,nb_voies,deb_m,geom,id_gest,id_zonage)
-select "ID",larg_m,nb_voies,"DEB",geom,id_gest,id_zonage
-from r_bdtopo.vf_temp;
+INSERT INTO r_bdtopo.voies_ferees(id_bdtopo,larg_m,nb_voies,geom,id_gest,id_zonage)
+select cleabs,larg_m,nombre_de_voies,geom,id_gest,id_zonage
+from r_bdtopo.troncon_de_voie_ferree;
 COMMIT;
 
 UPDATE r_bdtopo.voies_ferees
@@ -229,9 +236,6 @@ SET deb_m = (larg_m*nb_voies)+7;
 COMMIT;
 
 CREATE INDEX ON r_bdtopo.voies_ferees USING GIST (geom);
-COMMIT;
-
-DROP TABLE IF EXISTS r_bdtopo.vf_temp;
 COMMIT;
 
 CREATE INDEX ON r_bdtopo.voies_ferees USING GIST (geom); 
@@ -409,6 +413,7 @@ COMMIT;
 
 DROP SCHEMA "04_gl" CASCADE;
 COMMIT;
+
 
 
 
