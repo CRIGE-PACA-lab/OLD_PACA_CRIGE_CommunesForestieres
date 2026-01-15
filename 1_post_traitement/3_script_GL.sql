@@ -23,17 +23,16 @@
 --- Contours forestiers de la BD Foret téléchargeable sur le site de l'IGN "r_bdtopo"."bd_foret"												  ----
 --*------------------------------------------------------------------------------------------------------------------------------------------------*--
 --*------------------------------------------------------------------------------------------------------------------------------------------------*--
-
 --*------------------------------------------------------------------------------------------------------------*--
 --*------------------------------------------------------------------------------------------------------------*--
 ----   INTEGRATION DU CODE INSEE DU DEPARTEMENT CONCERNEE                                                     ----
 ----                                                                                                          ----
-----   Remplacer "04" avec le code INSEE du département                                                       ----                                        
-----   Remplacer XX   avec le code INSEE du département                                                       ----
-----                                                                                                          ----
+----   Remplacer 83XXX   avec le code INSEE de la commune                                                       ----
+----   Remplacer XXX par les 3 dernier chiffres du code commune
+----   Remplacer AA par le code INSEE du département
+----                                                                                                       ----
 ----   Exemple pour le département du VAR dont le code INSEE est 83                                           ----
-----   Rechercher - remplacer "04" par "83" (CTRL+f)                                                          ----
-----   Rechercher - remplacer XX par "83" (CTRL+f)  														  ---- 
+----   Rechercher - remplacer "83XXX" par "83" (CTRL+f)                                                          ----
 --*------------------------------------------------------------------------------------------------------------*--
 --*------------------------------------------------------------------------------------------------------------*--
 
@@ -41,8 +40,8 @@
 --- Création du schéma							  ---
 -----------------------------------------------------
 
-DROP SCHEMA IF EXISTS "04_gl";
-CREATE SCHEMA "04_gl";
+DROP SCHEMA IF EXISTS "83XXX_gl" CASCADE;
+CREATE SCHEMA "83XXX_gl";
 
 CREATE INDEX ON r_bdtopo.bd_foret USING GIST (geom);
 COMMIT;
@@ -63,6 +62,7 @@ COMMIT;
 --- NB : Les noms et statuts des gestionnaires peuvent être changés et adaptés aux besoins locaux ---
 --- Une table d'exemple est disponible sur Github ---
 
+DROP TABLE IF EXISTS gestionnaire_grand_lineaires;
 CREATE TABLE gestionnaire_grand_lineaires(
    id_gest VARCHAR(50),
    nom_gest VARCHAR(50),
@@ -75,6 +75,12 @@ COMMIT;
 --*------------------------------------------------------------------------------------------------------------*--
 
 --- Table lignes electriques ---
+
+ALTER TABLE  r_bdtopo."reseau-aerien-haute-tension-ht"
+ALTER COLUMN geom
+TYPE geometry(Geometry, 2154)
+USING ST_Force2D(geom);
+COMMIT;
 
 ALTER TABLE r_bdtopo."reseau-aerien-haute-tension-ht"
 ALTER COLUMN geom TYPE geometry(Geometry, 2154) USING ST_SetSRID(geom, 2154);
@@ -179,6 +185,17 @@ COMMIT;
 CREATE INDEX ON r_bdtopo.ligne_electrique USING GIST (geom);
 COMMIT;
 
+DROP TABLE IF EXISTS "83XXX_gl"."83XXX_ligne_electrique";
+CREATE TABLE "83XXX_gl"."83XXX_ligne_electrique" as 
+SELECT a.*
+FROM r_bdtopo.ligne_electrique  as a, r_cadastre.geo_commune as b
+where b.idu = 'XXX' and st_intersects(a.geom,b.geom); 
+COMMIT; 
+
+CREATE INDEX ON "83XXX_gl"."83XXX_ligne_electrique" USING GIST (geom);
+COMMIT;
+
+
 --*------------------------------------------------------------------------------------------------------------*--
 
 --- Table voies_ferees ---
@@ -234,7 +251,14 @@ COMMIT;
 CREATE INDEX ON r_bdtopo.voies_ferees USING GIST (geom);
 COMMIT;
 
-CREATE INDEX ON r_bdtopo.voies_ferees USING GIST (geom); 
+DROP TABLE IF EXISTS "83XXX_gl"."83XXX_voies_ferees";
+CREATE TABLE "83XXX_gl"."83XXX_voies_ferees" as 
+SELECT a.*
+FROM r_bdtopo.voies_ferees  as a, r_cadastre.geo_commune as b
+where b.idu = 'XXX' and st_intersects(a.geom,b.geom); 
+COMMIT; 
+
+CREATE INDEX ON "83XXX_gl"."83XXX_voies_ferees" USING GIST (geom); 
 COMMIT;
 
 
@@ -265,104 +289,114 @@ COMMIT;
 --*------------------------------------------------------------------------------------------------------------*--
 --- Lignes electriques ---
 
-drop table if exists "04_gl".bd_foretrgr;
-create table "04_gl".bd_foretrgr as 
-select a.geom as geom
-from  r_bdtopo.bd_foret as a, public.old200m as b
+DROP TABLE IF EXISTS "83XXX_gl".bd_foret;
+CREATE TABLE "83XXX_gl".bd_foret as 
+SELECT a.*
+FROM r_bdtopo.bd_foret as a, r_cadastre.geo_commune as b
+where b.idu = 'XXX' and st_intersects(a.geom,b.geom); 
+COMMIT;
+
+CREATE INDEX ON "83XXX_gl".bd_foret USING GIST (geom);
+COMMIT;
+
+drop table if exists "83XXX_gl".bd_foretrgr;
+create table "83XXX_gl".bd_foretrgr as 
+select ST_Union(a.geom) as geom
+from  "83XXX_gl".bd_foret as a, public.old200m as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
-CREATE INDEX ON "04_gl".bd_foretrgr USING GIST (geom);
+CREATE INDEX ON "83XXX_gl".bd_foretrgr USING GIST (geom);
 COMMIT;
 
-drop table if exists "04_gl".rte_ligne_temp0;
-create table "04_gl".rte_ligne_temp0 as 
+drop table if exists "83XXX_gl".rte_ligne_temp0;
+create table "83XXX_gl".rte_ligne_temp0 as 
 select a.id_ligne_elec,
 a.deb_m,
 st_intersection(a.geom,b.geom) as geom
-from r_bdtopo.ligne_electrique  as a, "04_gl".bd_foretrgr as b 
+from "83XXX_gl"."83XXX_ligne_electrique"  as a, "83XXX_gl".bd_foretrgr as b 
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
-CREATE INDEX ON "04_gl".rte_ligne_temp0 USING GIST (geom);
+CREATE INDEX ON "83XXX_gl".rte_ligne_temp0 USING GIST (geom);
 COMMIT;
 
-drop table if exists "04_gl".rte_ligne_temp1;
-create table "04_gl".rte_ligne_temp1 as 
+drop table if exists "83XXX_gl".rte_ligne_temp1;
+create table "83XXX_gl".rte_ligne_temp1 as 
 select a.id_ligne_elec as id_ligne_elec,
 st_buffer(a.geom,a.deb_m) as geom
-from "04_gl".rte_ligne_temp0 as a, "04_gl".bd_foretrgr as b
+from "83XXX_gl".rte_ligne_temp0 as a, "83XXX_gl".bd_foretrgr as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
-CREATE INDEX ON "04_gl".rte_ligne_temp1 USING GIST (geom);
+CREATE INDEX ON "83XXX_gl".rte_ligne_temp1 USING GIST (geom);
 COMMIT;
 
-drop table if exists "04_gl".rte_ligne2_temp;
-create table "04_gl".rte_ligne2_temp as 
+drop table if exists "83XXX_gl".rte_ligne2_temp;
+create table "83XXX_gl".rte_ligne2_temp as 
 select a.id_ligne_elec as id_ligne_elec,
 b.proprietaire as nom_prop, 
 b.geo_parcelle,
 b.comptecommunal as comptcom_prop,
 b.adresse as adresse_prop, 
 st_intersection(a.geom,b.geom) as geom
-from "04_gl".rte_ligne_temp1 as a, r_cadastre.parcelle_info as b
+from "83XXX_gl".rte_ligne_temp1 as a, r_cadastre.parcelle_info as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
 --*------------------------------------------------------------------------------------------------------------*--
 --- Voies férrées ---
 
-drop table if exists "04_gl".bd_foret20m;
-create table  "04_gl".bd_foret20m as 
+drop table if exists "83XXX_gl".bd_foret20m;
+create table  "83XXX_gl".bd_foret20m as 
 select st_union(st_buffer(a.geom,20)) as geom
-from  r_bdtopo.bd_foret as a, public.old200m as b
+from  "83XXX_gl".bd_foret as a, public.old200m as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
-CREATE INDEX ON "04_gl".bd_foret20m USING GIST (geom);
+CREATE INDEX ON "83XXX_gl".bd_foret20m USING GIST (geom);
 COMMIT;
 
-drop table if exists "04_gl".vf_gl_temp0;
-create table "04_gl".vf_gl_temp0 as 
+drop table if exists "83XXX_gl".vf_gl_temp0;
+create table "83XXX_gl".vf_gl_temp0 as 
 select a.id_vf as id_vf,
 a.deb_m,
 ST_Intersection(a.geom,b.geom) as geom
-from  r_bdtopo.voies_ferees as a, "04_gl".bd_foret20m  as b
+from  "83XXX_gl"."83XXX_voies_ferees" as a, "83XXX_gl".bd_foret20m  as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
-CREATE INDEX ON "04_gl".vf_gl_temp0 USING GIST (geom);
+CREATE INDEX ON "83XXX_gl".vf_gl_temp0 USING GIST (geom);
 COMMIT;
 
-drop table if exists "04_gl".vf_gl_temp1;
-create table "04_gl".vf_gl_temp1 as 
+drop table if exists "83XXX_gl".vf_gl_temp1;
+create table "83XXX_gl".vf_gl_temp1 as 
 select a.id_vf as id_vf,
 st_buffer(a.geom,(deb_m)) as geom
-from  "04_gl".vf_gl_temp0 as a, "04_gl".bd_foret20m  as b
+from  "83XXX_gl".vf_gl_temp0 as a, "83XXX_gl".bd_foret20m  as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
-CREATE INDEX ON "04_gl".vf_gl_temp1 USING GIST (geom);
+CREATE INDEX ON "83XXX_gl".vf_gl_temp1 USING GIST (geom);
 COMMIT;
 
-drop table if exists "04_gl".vf_gl_old_temp;
-create table "04_gl".vf_gl_old_temp as 
+drop table if exists "83XXX_gl".vf_gl_old_temp;
+create table "83XXX_gl".vf_gl_old_temp as 
 select a.id_vf as id_vf,
 b.proprietaire as nom_prop, 
 b.geo_parcelle,
 b.comptecommunal as comptcom_prop,
 b.adresse as adresse_prop, 
 st_intersection(a.geom,b.geom) as geom
-from "04_gl".vf_gl_temp1 as a, r_cadastre.parcelle_info as b
+from "83XXX_gl".vf_gl_temp1 as a, r_cadastre.parcelle_info as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
 --*------------------------------------------------------------------------------------------------------------*--
 --- Aggrégation des OLD ---
 
-DROP TABLE IF EXISTS "XX_old50m_resultat".obligations_gl;
-CREATE TABLE "XX_old50m_resultat".obligations_gl(
+DROP TABLE IF EXISTS "AA_old50m_resultat"."83XXX_obligations_gl";
+CREATE TABLE "AA_old50m_resultat"."83XXX_obligations_gl"(
    id_obligation SERIAL,
    nom_prop TEXT,
    adresse_prop TEXT,
@@ -371,27 +405,26 @@ CREATE TABLE "XX_old50m_resultat".obligations_gl(
    geom GEOMETRY,
    id_vf INT,
    geo_parcelle VARCHAR(50),
-   id_infra_pt INT,
    id_ligne_elec INT,
    PRIMARY KEY(id_obligation)
    );
 COMMIT;
 
-INSERT INTO "XX_old50m_resultat".obligations_gl(nom_prop,adresse_prop,comptcom_prop,geom,id_vf,geo_parcelle)
+INSERT INTO "AA_old50m_resultat"."83XXX_obligations_gl"(nom_prop,adresse_prop,comptcom_prop,geom,id_vf,geo_parcelle)
 select nom_prop,adresse_prop,comptcom_prop,geom,id_vf,geo_parcelle
-from "04_gl".vf_gl_old_temp;
+from "83XXX_gl".vf_gl_old_temp;
 COMMIT;
 
-insert into "XX_old50m_resultat".obligations_gl(nom_prop,adresse_prop,comptcom_prop,geom,id_ligne_elec,geo_parcelle)
+insert into "AA_old50m_resultat"."83XXX_obligations_gl"(nom_prop,adresse_prop,comptcom_prop,geom,id_ligne_elec,geo_parcelle)
 select nom_prop,adresse_prop,comptcom_prop,geom,id_ligne_elec,geo_parcelle
-from "04_gl".rte_ligne2_temp;
+from "83XXX_gl".rte_ligne2_temp;
 COMMIT;
 
-UPDATE "XX_old50m_resultat".obligations_gl
+UPDATE "AA_old50m_resultat"."83XXX_obligations_gl"
 SET surface_m2 = st_area(geom);
 COMMIT;
 
-CREATE INDEX ON "XX_old50m_resultat".obligations_gl USING GIST (geom);
+CREATE INDEX ON "AA_old50m_resultat"."83XXX_obligations_gl" USING GIST (geom);
 COMMIT;
 
 --*-----------------------------------------------------------------------------------------------------------*--
@@ -407,7 +440,7 @@ COMMIT;
 --               Libère l''espace disque occupé par les tables temporaires de calcul.                        ----
 --*-----------------------------------------------------------------------------------------------------------*--
 
-DROP SCHEMA "04_gl" CASCADE;
+DROP SCHEMA "83XXX_gl" CASCADE;
 COMMIT;
 
 

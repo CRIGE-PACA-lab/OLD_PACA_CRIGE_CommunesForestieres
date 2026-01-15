@@ -14,7 +14,7 @@
 ------------------------------------------------------------------------------------------------------------------
 ----   Remplacer "26XXX" par le code INSEE de la commune                                                      ----
 ----   Remplacer "XXX" par les 3 derniers chiffres de ce code INSEE         								  ----
----    Remplacer "r_cadastre_26XXX" par les 5 chiffres de ce code INSEE            	              ----
+---    Remplacer "AA" par le code INSEE du département      	              ----
 ------------------------------------------------------------------------------------------------------------------
 
 -----------------------------------
@@ -22,12 +22,12 @@
 -----------------------------------
 
 CREATE INDEX 
-ON  r_cadastre_26XXX.parcelle_info
+ON  r_cadastre.parcelle_info
 USING gist (geom); 
 COMMIT;
 
 CREATE INDEX 
-ON  r_cadastre_26XXX.geo_commune
+ON  r_cadastre.geo_commune
 USING gist (geom); 
 COMMIT;
 
@@ -35,8 +35,8 @@ COMMIT;
 --- Création d'une table vide conforme au standard régional ---
 ---------------------------------------------------------------
 
-Drop table if exists "26_old50m_resultat"."26xxx_result_final_mcd";
-CREATE TABLE  "26_old50m_resultat"."26xxx_result_final_mcd"(
+Drop table if exists "AA_old50m_resultat"."26xxx_result_final_mcd";
+CREATE TABLE  "AA_old50m_resultat"."26xxx_result_final_mcd"(
    id_obligation SERIAL,  --- identifiant de la zone à débroussailler (en série)
    geom GEOMETRY,  --- géométrie
    situation VARCHAR(250), --- situation géographique au regard du document d'urbanisme
@@ -59,8 +59,8 @@ COMMIT;
 --- Création d'une table temporaire 																											  ---
 -----------------------------------------------------------------------------------------------------------------------------------------------------
 
-DROP TABLE IF EXISTS  "26_old50m_resultat"."26xxx_result_final_temp"; --- table temporaire
-CREATE TABLE  "26_old50m_resultat"."26xxx_result_final_temp" AS
+DROP TABLE IF EXISTS  "AA_old50m_resultat"."26xxx_result_final_temp"; --- table temporaire
+CREATE TABLE  "AA_old50m_resultat"."26xxx_result_final_temp" AS
 select a.comptecommunal as obl_comptcom,  --- compte communal de l'obligé
 b.comptecommunal as comptcom_prop, --- compte communal du propriétaire de la parcelle à débroussailler
 b.proprietaire as nom_prop, --- nom du propriétaire de la parcelle à débroussailler
@@ -70,13 +70,13 @@ b.geo_parcelle, --- parcelle à débroussailler
                ST_MakeValid(                 -- Corrige les géométries invalides
                    ST_intersection(a.geom,b.geom)),      -- intersecte les géométries 
        3)) AS geom                           -- Géométrie finale 
-from  "26_old50m_resultat"."26xxx_result_final" as a join r_cadastre_26XXX.parcelle_info as b --- sources : résultats de OLD50m ; cadastre
+from  "AA_old50m_resultat"."26xxx_result_final" as a join r_cadastre.parcelle_info as b --- sources : résultats de OLD50m ; cadastre
 on st_intersects(a.geom, b.geom)
 where b.codecommune = 'XXX';
 COMMIT;
 
 CREATE INDEX 
-ON  "26_old50m_resultat"."26xxx_result_final_temp"
+ON  "AA_old50m_resultat"."26xxx_result_final_temp"
 USING gist (geom); 
 COMMIT;
 
@@ -85,14 +85,14 @@ COMMIT;
 --- Jointure des tables "cadastre" et "bati" à la table temporaire ---
 ----------------------------------------------------------------------
 
-ALTER TABLE  "26_old50m_resultat"."26xxx_result_final_temp"
+ALTER TABLE  "AA_old50m_resultat"."26xxx_result_final_temp"
 ADD COLUMN obl_nom TEXT, --- nom de l'obligé 
 ADD COLUMN id_bati INT,  --- identifiant de la construction à l'origine du débroussaillement
 ADD COLUMN obl_id_adresse VARCHAR;  --- identifiant de l'adresse de l'obligé 
 
-UPDATE  "26_old50m_resultat"."26xxx_result_final_temp" as a
+UPDATE  "AA_old50m_resultat"."26xxx_result_final_temp" as a
 SET obl_nom = b.proprietaire --- nom de l'obligé 
-from r_cadastre_26XXX.parcelle_info as b --- source : cadastre
+from r_cadastre.parcelle_info as b --- source : cadastre
 where a.obl_comptcom = b.comptecommunal;  
 
 
@@ -100,9 +100,9 @@ where a.obl_comptcom = b.comptecommunal;
 --- Insertion de la table temporaire dans la table finale conforme au format du standard régional PACA ---
 ----------------------------------------------------------------------------------------------------------
 
-insert into "26_old50m_resultat"."26xxx_result_final_mcd"(geom,comptcom_prop,nom_prop,obl_comptcom,obl_nom,obl_id_adresse,geo_parcelle,id_bati)
+insert into "AA_old50m_resultat"."26xxx_result_final_mcd"(geom,comptcom_prop,nom_prop,obl_comptcom,obl_nom,obl_id_adresse,geo_parcelle,id_bati)
 select geom,comptcom_prop,nom_prop,obl_comptcom,obl_nom,obl_id_adresse,geo_parcelle,id_bati
-from  "26_old50m_resultat"."26xxx_result_final_temp";
+from  "AA_old50m_resultat"."26xxx_result_final_temp";
 COMMIT;
 
 -----------------------------------------------------------------------------
@@ -110,19 +110,19 @@ COMMIT;
 --- Facultatif si la commune n'est pas couverte par un PLU 				  ---
 -----------------------------------------------------------------------------
 
-Update "26_old50m_resultat"."26xxx_result_final_mcd" as a
+Update "AA_old50m_resultat"."26xxx_result_final_mcd" as a
 set situation = case 
 when st_within(a.geom,b.geom) then 'dans la zone U'
 when st_disjoint(a.geom,b.geom) then 'en dehors de la zone U'
 else 'chevauchant une zone U' end 
-from  "26XXX_wold50m"."26XXX_zonage_corr7" as b; --- source : zonage du PLU
+from  "AA_old50m_resultat"."AA_zonage_global" as b; --- source : zonage du PLU
 COMMIT;
 
 --------------------------------------------------------
 --- Calcul de la surface des zones à débroussailler  ---
 --------------------------------------------------------
 
-Update "26_old50m_resultat"."26xxx_result_final_mcd" as a
+Update "AA_old50m_resultat"."26xxx_result_final_mcd" as a
 set surface_m2 = case when a.geom is not null then st_area(a.geom)
 else st_area(a.geom)
 end ; 
@@ -133,7 +133,7 @@ COMMIT;
 --- Reclassification adaptables aux spécificités locales ---
 ------------------------------------------------------------
 
-UPDATE "26_old50m_resultat"."26xxx_result_final_mcd"
+UPDATE "AA_old50m_resultat"."26xxx_result_final_mcd"
 SET obl_statut = (
 CASE 
 WHEN obl_nom like '%COMMUNE%' OR obl_nom like '%MAIRIE%'
@@ -172,11 +172,12 @@ COMMIT;
 --- Suppression de la table intermédiaire et des géométries vides ---
 ---------------------------------------------------------------------
 
-DELETE FROM "26_old50m_resultat"."26xxx_result_final_mcd"
+DELETE FROM "AA_old50m_resultat"."26xxx_result_final_mcd"
 WHERE ST_IsEmpty(geom) or surface_m2 = 0; 
+COMMIT;
 
-DROP TABLE IF EXISTS  "26_old50m_resultat"."26xxx_result_final_temp"
-
+DROP TABLE IF EXISTS  "AA_old50m_resultat"."26xxx_result_final_temp";
+COMMIT;
 
 
 

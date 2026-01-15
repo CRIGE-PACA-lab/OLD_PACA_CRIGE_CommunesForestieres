@@ -23,12 +23,12 @@
 --*------------------------------------------------------------------------------------------------------------*--
 ----   INTEGRATION DU CODE INSEE DU DEPARTEMENT CONCERNEE                                                     ----
 ----                                                                                                          ----
-----   Remplacer "04" avec le code INSEE du département                                                       ----                                        
-----   Remplacer XX   avec le code INSEE du département                                                       ----
-----                                                                                                          ----
+----   Remplacer 83XXX   avec le code INSEE de la commune                                                       ----
+----   Remplacer XXX par les 3 dernier chiffres du code commune
+----   Remplacer AA par le code INSEE du département
+----                                                                                                       ----
 ----   Exemple pour le département du VAR dont le code INSEE est 83                                           ----
-----   Rechercher - remplacer "04" par "83" (CTRL+f)                                                          ----
-----   Rechercher - remplacer XX par "83" (CTRL+f)  														  ---- 
+----   Rechercher - remplacer "83XXX" par "83" (CTRL+f)                                                          ----
 --*------------------------------------------------------------------------------------------------------------*--
 --*------------------------------------------------------------------------------------------------------------*--
                             
@@ -37,64 +37,20 @@
 --- Création du schéma ---
 -----------------------------------------------------
 
-DROP SCHEMA IF EXISTS "04_routes" CASCADE;
-CREATE SCHEMA "04_routes";
+DROP SCHEMA IF EXISTS "83XXX_routes" CASCADE;
+CREATE SCHEMA "83XXX_routes";
 COMMIT;
 
 --*------------------------------------------------------------------------------------------------------------*--
 
---- Table routes ---
-
-ALTER TABLE r_bdtopo.troncon_de_route
-ADD COLUMN IF NOT EXISTS id_zonage INTEGER; 
-COMMIT;
-
-UPDATE r_bdtopo.troncon_de_route as a 
-SET id_zonage = b.fid
-from public.old200m as b 
-where st_intersects(a.geom,b.geom);
-COMMIT; 
-
-DROP TABLE IF EXISTS "04_routes".routes;
-CREATE TABLE "04_routes".routes(
-   id_troncon SERIAL,
-   id_bdtopo VARCHAR(50),
-   nature VARCHAR(50),
-   importance VARCHAR(50),
-   acces_vehicule_leger VARCHAR(50),
-   nom_voie TEXT,
-   cpx_numero VARCHAR(50),
-   cpx_classement_administratif VARCHAR(50),
-   cpx_gestionnaire VARCHAR(50),
-   larg_m INT,
-   deb_m INTEGER,
-   source VARCHAR(50),
-   geom GEOMETRY,
-   id_gest VARCHAR,
-   id_zonage INT,
-   PRIMARY KEY(id_troncon)
-);
-COMMIT;
-
-insert into "04_routes".routes(id_bdtopo,nature,importance, nom_voie, cpx_numero, cpx_classement_administratif, cpx_gestionnaire,geom,id_zonage)
-select cleabs,nature,importance, cpx_toponyme_route_nommee, cpx_numero,cpx_classement_administratif , cpx_gestionnaire,geom,id_zonage
-from r_bdtopo.troncon_de_route
-where acces_vehicule_leger = 'Libre' or acces_vehicule_leger = 'A préage' ; --- Seulement les routes ouvertes à la circulation
-COMMIT;
-
-CREATE INDEX ON "04_routes".routes USING GIST (geom);
-COMMIT;
-
---*------------------------------------------------------------------------------------------------------------*--
-
---- Table gestionnaire ---
+--- Table gestionnaire (à ne faire tourner qu'une seule fois) ---
 
 -----------------------------------------------------------------------------------------------------
 --- NB : Les noms et statuts des gestionnaires peuvent être changés et adaptés aux beosins locaux ---
 -----------------------------------------------------------------------------------------------------
 
-drop table if exists "XX_old50m_resultat".gestionnaire;
-CREATE TABLE "XX_old50m_resultat".gestionnaire(
+drop table if exists "AA_old50m_resultat".gestionnaire;
+CREATE TABLE "AA_old50m_resultat".gestionnaire(
    id_gest SERIAL,
    nom_gest VARCHAR(250),
    statut VARCHAR(250),
@@ -103,20 +59,20 @@ CREATE TABLE "XX_old50m_resultat".gestionnaire(
 );
 COMMIT;
 
-drop table if exists "04_routes".gest_temp;
-create table "04_routes".gest_temp as 
+drop table if exists "83XXX_routes".gest_temp;
+create table "83XXX_routes".gest_temp as 
 select 
 cpx_gestionnaire
-FROM "04_routes".routes
+FROM r_bdtopo.troncon_de_route
 group by cpx_gestionnaire ;
 COMMIT;
 
-insert into "XX_old50m_resultat".gestionnaire(nom_gest)
+insert into "AA_old50m_resultat".gestionnaire(nom_gest)
 select cpx_gestionnaire
-from "04_routes".gest_temp;
+from "83XXX_routes".gest_temp;
 COMMIT;
 
-update "XX_old50m_resultat".gestionnaire    --- A changer si besoin
+update "AA_old50m_resultat".gestionnaire    --- A changer si besoin
 set statut = case when nom_gest = 'Alpes-de-Haute-Provence'  
 					or nom_gest = 'Alpes-de-Haute-Provence/Alpes-Maritimes' 
  					or nom_gest ='Alpes-de-Haute-Provence/Hautes-Alpes'  
@@ -143,13 +99,65 @@ set statut = case when nom_gest = 'Alpes-de-Haute-Provence'
 				end ;
 COMMIT;
 
-UPDATE "04_routes".routes as a 
+--*------------------------------------------------------------------------------------------------------------*--
+
+--- Table routes ---
+
+ALTER TABLE r_bdtopo.troncon_de_route
+ADD COLUMN IF NOT EXISTS id_zonage INTEGER; 
+COMMIT;
+
+DROP TABLE IF EXISTS "83XXX_routes".troncon_de_route_bdtopo;
+CREATE TABLE "83XXX_routes".troncon_de_route_bdtopo as
+SELECT a.*
+FROM r_bdtopo.troncon_de_route as a, r_cadastre.geo_commune as b 
+WHERE b.idu = 'XXX' and st_intersects(a.geom,b.geom);
+COMMIT;
+
+UPDATE "83XXX_routes".troncon_de_route_bdtopo as a 
+SET id_zonage = b.fid
+from public.old200m as b 
+where st_intersects(a.geom,b.geom);
+COMMIT; 
+
+DROP TABLE IF EXISTS "83XXX_routes".routes;
+CREATE TABLE "83XXX_routes".routes(
+   id_troncon SERIAL,
+   cleabs VARCHAR(50),
+   nature VARCHAR(50),
+   importance VARCHAR(50),
+   acces_vehicule_leger VARCHAR(50),
+   nom_voie TEXT,
+   cpx_numero VARCHAR(50),
+   cpx_classement_administratif VARCHAR(50),
+   cpx_gestionnaire VARCHAR(50),
+   nombre_de_voies INT,
+   largeur_de_chaussee INT,
+   deb_m INTEGER,
+   source VARCHAR(50),
+   geom GEOMETRY,
+   id_gest VARCHAR,
+   id_zonage INT,
+   PRIMARY KEY(id_troncon)
+);
+COMMIT;
+
+insert into "83XXX_routes".routes(cleabs,nature,importance,acces_vehicule_leger, nom_voie, cpx_numero, cpx_classement_administratif, cpx_gestionnaire, nombre_de_voies,largeur_de_chaussee,geom,id_zonage)
+select cleabs,nature,importance,acces_vehicule_leger,cpx_toponyme_route_nommee, cpx_numero,cpx_classement_administratif , cpx_gestionnaire,nombre_de_voies,largeur_de_chaussee,geom,id_zonage
+from "83XXX_routes".troncon_de_route_bdtopo
+where acces_vehicule_leger = 'Libre' or acces_vehicule_leger = 'A préage' and id_zonage is not null ; --- Seulement les routes ouvertes à la circulation et soumises aux OLD
+COMMIT;
+
+CREATE INDEX ON "83XXX_routes".routes USING GIST (geom);
+COMMIT;
+
+UPDATE "83XXX_routes".routes as a 
 SET id_gest = b.id_gest
-from "XX_old50m_resultat".gestionnaire as b
+from "AA_old50m_resultat".gestionnaire as b
 where a.cpx_gestionnaire = b.nom_gest;
 COMMIT;
 
-UPDATE "04_routes".routes 
+UPDATE "83XXX_routes".routes 
 SET cpx_gestionnaire = case 
 					   when  cpx_gestionnaire is null then 'prive'
 					   else cpx_gestionnaire end,
@@ -173,53 +181,58 @@ COMMIT;
 --*------------------------------------------------------------------------------------------------------------*--
 --- Table obligations_routes ---
 
-Drop table if exists "04_routes".old_route_temp;
-Create table "04_routes".old_route_temp as 
-select a.id_troncon as id_troncon,
-st_buffer(a.geom,(a.deb_m + a.larg_m)) as geom
-from "04_routes".routes as a, public.old200m as b
+UPDATE "83XXX_routes".routes
+SET nombre_de_voies = case when nombre_de_voies < 1 or nombre_de_voies is null then 1 else nombre_de_voies end,
+largeur_de_chaussee = case when largeur_de_chaussee < 1 or largeur_de_chaussee is null then 1 else largeur_de_chaussee end; 
+COMMIT; 
+
+Drop table if exists "83XXX_routes".old_route_temp;
+Create table "83XXX_routes".old_route_temp as 
+select a.cleabs as cleabs,
+st_buffer(a.geom,(a.deb_m + (a.largeur_de_chaussee *  a.nombre_de_voies ))) as geom
+from "83XXX_routes".routes as a, public.old200m as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
-CREATE INDEX ON "04_routes".old_route_temp USING GIST (geom);
+CREATE INDEX ON "83XXX_routes".old_route_temp USING GIST (geom);
 COMMIT;
 
-UPDATE "04_routes".old_route_temp as a 
+UPDATE "83XXX_routes".old_route_temp as a 
 set geom = st_intersection(a.geom,b.geom)
 from public.old200m as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
-Drop table if exists "04_routes".old_route_temp2;
-Create table "04_routes".old_route_temp2 as 
-select a.id_troncon as id_troncon, 
+Drop table if exists "83XXX_routes".old_route_temp2;
+Create table "83XXX_routes".old_route_temp2 as 
+select a.cleabs as cleabs, 
 b.geo_parcelle, 
 b.adresse as adresse_prop, 
 b.comptecommunal as comptcom_prop,
 b.proprietaire as nom_prop,
 st_intersection(a.geom,b.geom) as geom
-from "04_routes".old_route_temp as a, r_cadastre.parcelle_info as b
+from "83XXX_routes".old_route_temp as a, r_cadastre.parcelle_info as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
-DROP TABLE IF EXISTS "XX_old50m_resultat".obligations_routes;
-CREATE TABLE "XX_old50m_resultat".obligations_routes(
+DROP TABLE IF EXISTS "AA_old50m_resultat"."83XXX_obligations_routes";
+CREATE TABLE "AA_old50m_resultat"."83XXX_obligations_routes"(
    id_obligation SERIAL,
    geom GEOMETRY,
    comptcom_prop VARCHAR(250),
    nom_prop TEXT,
    adresse_prop TEXT,
    surface_m2 FLOAT,
-   id_troncon INT,
-   geo_parcel VARCHAR(50),
+   cleabs VARCHAR,
+   geo_parcelle VARCHAR(50),
    id_prop VARCHAR(50),
    PRIMARY KEY(id_obligation)
 );
 COMMIT;
 
-INSERT INTO "XX_old50m_resultat".obligations_routes(geom,comptcom_prop,nom_prop,adresse_prop,id_troncon,geo_parcel)
-select geom,comptcom_prop,nom_prop,adresse_prop,id_troncon,geo_parcelle
-from "04_routes".old_route_temp2;
+INSERT INTO "AA_old50m_resultat"."83XXX_obligations_routes"(geom,comptcom_prop,nom_prop,adresse_prop,cleabs,geo_parcelle)
+select geom,comptcom_prop,nom_prop,adresse_prop,cleabs,geo_parcelle
+from "83XXX_routes".old_route_temp2;
 COMMIT;
 
 --*-----------------------------------------------------------------------------------------------------------*--
@@ -235,7 +248,7 @@ COMMIT;
 --               Libère l''espace disque occupé par les tables temporaires de calcul.                        ----
 --*-----------------------------------------------------------------------------------------------------------*--
 
-DROP SCHEMA "04_routes" CASCADE;
+DROP SCHEMA "83XXX_routes" CASCADE;
 COMMIT;
 
 
