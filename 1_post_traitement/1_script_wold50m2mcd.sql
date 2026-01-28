@@ -45,7 +45,7 @@ CREATE TABLE  "AA_old50m_resultat"."26xxx_result_final_mcd"(
    adresse_prop TEXT, --- adresse de la parcelle à débroussailler
    obl_comptcom VARCHAR(250), --- compte communal de l'obligé
    obl_nom TEXT, --- nom de l'obligé 
-   obl_id_adresse TEXT, --- identifiant de l'adresse de l'obligé (se reporter à la table "adresse" du MCD pour obtenir l'adresse complète)
+   obl_adresse TEXT, --- identifiant de l'adresse de l'obligé (se reporter à la table "adresse" du MCD pour obtenir l'adresse complète)
    obl_statut VARCHAR(250), --- statut juridique de l'obligé 
    surface_m2 FLOAT, --- surface à débroussailer en m²
    geo_parcelle VARCHAR(250), --- n° de la parcelle à débroussailler
@@ -178,6 +178,7 @@ COMMIT;
 
 DROP TABLE IF EXISTS  "AA_old50m_resultat"."26xxx_result_final_temp";
 COMMIT;
+
 
 
 
