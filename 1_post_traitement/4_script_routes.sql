@@ -235,6 +235,15 @@ select geom,comptcom_prop,nom_prop,adresse_prop,cleabs,geo_parcelle
 from "83XXX_routes".old_route_temp2;
 COMMIT;
 
+ALTER TABLE "AA_old50m_resultat"."83XXX_obligations_routes"
+ADD COLUMN IF NOT EXISTS gestionnaire TEXT; 
+
+UPDATE "AA_old50m_resultat"."83XXX_obligations_routes" as a 
+SET gestionnaire = b.cpx_gestionnaire
+FROM r_bdtopo.troncon_de_route as b 
+WHERE a.cleabs = b.cleabs;
+
+
 --*-----------------------------------------------------------------------------------------------------------*--
 --*-----------------------------------------------------------------------------------------------------------*--
 ----                                 NETTOYAGE DU SCHÉMA DE TRAVAIL                                          ----
@@ -250,6 +259,7 @@ COMMIT;
 
 DROP SCHEMA "83XXX_routes" CASCADE;
 COMMIT;
+
 
 
 
