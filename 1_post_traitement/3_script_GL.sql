@@ -427,6 +427,22 @@ COMMIT;
 CREATE INDEX ON "AA_old50m_resultat"."83XXX_obligations_gl" USING GIST (geom);
 COMMIT;
 
+ALTER TABLE "AA_old50m_resultat"."83XXX_obligations_gl"
+ADD COLUMN IF NOT EXISTS gestionnaire TEXT; 
+COMMIT;
+
+UPDATE "AA_old50m_resultat"."83XXX_obligations_gl" as a 
+SET gestionnaire = b.id_gest
+FROM r_bdtopo.ligne_electrique as b 
+WHERE a.id_ligne_elec = b.id_ligne_elec;
+COMMIT;
+
+UPDATE "AA_old50m_resultat"."83XXX_obligations_gl" 
+SET gestionnaire = CASE WHEN gestionnaire = '16' then 'RTE'
+WHEN gestionnaire = '17' then 'Enedis'
+ELSE 'SNCF' end ;
+COMMIT;
+
 --*-----------------------------------------------------------------------------------------------------------*--
 --*-----------------------------------------------------------------------------------------------------------*--
 ----                                 NETTOYAGE DU SCHÉMA DE TRAVAIL                                          ----
@@ -442,6 +458,7 @@ COMMIT;
 
 DROP SCHEMA "83XXX_gl" CASCADE;
 COMMIT;
+
 
 
 
