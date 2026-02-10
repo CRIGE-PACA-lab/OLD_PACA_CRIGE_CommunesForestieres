@@ -41,7 +41,7 @@ Les scripts doivent être exécutés avec un utilisateur disposant des droits de
 
 | Source  | Nom par défaut    | Schéma d'import  | Nom d'import | Définition | Géométrie |
 | :---------: |:---------:| :----------:| :--------------------:| :---------:| :---------:|
-| [BD_TOPO (format .gpkg)](https://geoservices.ign.fr/telechargement-api/BDTOPO?format=GPKG)  | troncon_de_route  |   r_bdtopo  |    troncon_de_routes | Tronçon de routes référencés dans la BD_TOPO. | Ligne
+| [BD_TOPO (format .gpkg)](https://geoservices.ign.fr/telechargement-api/BDTOPO?format=GPKG)  | troncon_de_route  |   r_bdtopo  |    troncon_de_route | Tronçon de routes référencés dans la BD_TOPO. | Ligne
 
 
 ### 🚆⚡ GRANDS LINEAIRES
@@ -62,6 +62,7 @@ Les scripts doivent être exécutés avec un utilisateur disposant des droits de
 | [BAN_PLUS](https://geoservices.ign.fr/ban-plus#telechargement) | Lien adresse-parcelle        | r_bdtopo  |   lien_adresse-parcelle | Couche permettant de relier le point d'adresse à la parcelle adréssée | Ligne
 
 Toutes les couches doivent être en système de coordonnées Lambert-93 (EPSG:2154).
+
 
 
 
