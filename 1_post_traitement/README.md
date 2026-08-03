@@ -6,11 +6,12 @@ Le traitement repose sur 4 scripts complémentaires à exécuter dans l'ordre su
 
 | Ordre | Fichier                       | Rôle                                                     |
 --------------------------------|--------------------------------|----------------------------------------------------------|
-1 | script_wold50m2mcd.sql | Ajout des informations majic aux résultats de l'outil OLD50m. Utiliser script_wold50m2mcd.py pour automatiser sur plusieurs communes
-2 | script_adresse.sql | Ajouter l'adresse de l'obligé   |
-3 | script_GL.sql    | Modélisation des OLD générées par les infrastructures éléctriques et les voies férrées           |
-4 | script_routes.sql |  Modélisation des OLD générées par les voies ouvertes à la circulation   |
-__|gestionnaire_gl.csv        | Fichier-type listant les gestionnaires de grands linéaires mis à disposition par le CRIGE PACA. Peut être utilisé pour le montage de la base de données                   |
+1 | 1_script_wold50m2mcd.sql | Ajout des informations majic aux résultats de l'outil OLD50m. Utiliser 1_script_wold50m2mcd.py pour automatiser sur plusieurs communes
+2 | 2_script_adresse.sql | Ajouter l'adresse de l'obligé. Utiliser 2_script_adresse.py pour automatiser sur plusieurs communes  |
+3 | 3_script_elec.sql    | Modélisation des OLD générées par les infrastructures éléctriques. Utiliser 3_script_elec.py pour automatiser sur plusieurs communes       |
+4 | 4_script_lineaires.sql |  Modélisation des OLD générées par les voies ouvertes à la circulation et les voies férrées. Utiliser 4_script_lineaires.py pour automatiser sur plusieurs communes    |
+__| update gestionnaire.sql    | Script de mise à jour des gestionnaires des réseaux routiers en fonction de la BD TOPO                  |
+__| gestionnaire.gpkg        | Fichier-type listant les gestionnaires de grands linéaires mis à disposition par le CRIGE PACA. Peut être utilisé pour le montage de la base de données                   |
      
 ---
 
@@ -27,7 +28,7 @@ Les scripts doivent être exécutés avec un utilisateur disposant des droits de
 
 ## Données nécessaires
 
-## Données généralistes
+### Données généralistes
 
 | Source  | Nom par défaut    | Schéma d'import | Nom d'import | Définition | Géométrie | 
 | :---------: |:---------:| :----------:| :--------------------:| :---------:| :---------:|

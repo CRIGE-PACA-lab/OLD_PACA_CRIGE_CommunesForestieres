@@ -12,14 +12,14 @@
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------																	
 
 ------------------------------------------------------------------------------------------------------------------
-----   Remplacer "26XXX" par le code INSEE de la commune                                                      ----
+----   Remplacer "26xxx" par le code INSEE de la commune                                                      ----
 ----   Remplacer "XXX" par les 3 derniers chiffres de ce code INSEE         								  ----
 ---    Remplacer "AA" par le code INSEE du département      	              ----
 ------------------------------------------------------------------------------------------------------------------
 
------------------------------------
---- Création des index en amont ---
------------------------------------
+----------------------------------------------
+--- Création des index en amont et restart ---
+-----------------------------------------------
 
 CREATE INDEX 
 ON  r_cadastre.parcelle_info
@@ -37,21 +37,40 @@ COMMIT;
 
 Drop table if exists "AA_old50m_resultat"."26xxx_result_final_mcd";
 CREATE TABLE  "AA_old50m_resultat"."26xxx_result_final_mcd"(
-   id_obligation SERIAL,  --- identifiant de la zone à débroussailler (en série)
-   geom GEOMETRY,  --- géométrie
-   situation VARCHAR(250), --- situation géographique au regard du document d'urbanisme
-   comptcom_prop VARCHAR(250), --- compte communal du propriétaire de la parcelle à débroussailler
-   nom_prop TEXT, --- nom du propriétaire de la parcelle à débroussailler
-   adresse_prop TEXT, --- adresse de la parcelle à débroussailler
-   obl_comptcom VARCHAR(250), --- compte communal de l'obligé
-   obl_nom TEXT, --- nom de l'obligé 
-   obl_adresse TEXT, --- identifiant de l'adresse de l'obligé (se reporter à la table "adresse" du MCD pour obtenir l'adresse complète)
-   obl_statut VARCHAR(250), --- statut juridique de l'obligé 
-   surface_m2 FLOAT, --- surface à débroussailer en m²
-   geo_parcelle VARCHAR(250), --- n° de la parcelle à débroussailler
-   ID_bati INT, --- identifiant de la construction à l'origine du débroussaillement
-   PRIMARY KEY(id_obligation)
+   fid_old SERIAL, --- Identifiant de l'objet, en série
+   id_old VARCHAR(50), --- Concaténation du compte communal de l'obligé ou de l'identifiant de gestionnaire et du numéro de parcelle de l'OLD 
+   situation VARCHAR(50), --- Situation de l'obligation au regarde de la reglementation spécifique liée aux zones U du PLU.
+   obl_comptcom VARCHAR(50), --- Compte de propriété de l'obligé
+   obl_nom TEXT, --- Nom de la personne (morale ou physique) responsable de l'exécution de l'obligation.
+   obl_statut VARCHAR(50), --- statut de la personne (morale ou physique) responsable de l'exécution de l'obligation.
+   nom_prop TEXT, --- Nom de la personne (morale ou physique) chez qui l'obligation doit être exécutée.
+   comptcom_prop VARCHAR(50), --- Compte de propriété du propriétaire de la parcelle
+   geom_obligations_bati GEOMETRY, --- Surfaces à débroussailler par un seul et unique obligé autour d'une construction
+   geom_obligations_lineaires GEOMETRY, --- Surfaces à débroussailler par un seul et unique obligé autour d'une route ou d'une voie de chemin de fer
+   geom_obligations_elec GEOMETRY, --- Surfaces à débroussailler par un seul et unique obligé autour des infrastrcutures des réseaux de transport et distribution d'éléctricité
+   id_troncon INTEGER, --- Identifiant unique du tronçon de route
+   id_vf INTEGER, --- Identifiant unique du tronçon de voie férrée
+   id_ligne_elec INTEGER, --- Identifiant unique du tronçon de ligne electrique
+   id_zone INTEGER, --- Identifiant de la zone U (facultatif)
+   ID_bati INTEGER, --- Identifiant unique du batiment causant l'OLD
+   geo_parcel VARCHAR(50), --- Identifiant unique de la parcelle à débroussailler
+   PRIMARY KEY(fid_old)
 );
+COMMIT;
+
+CREATE INDEX 
+ON  "AA_old50m_resultat"."26xxx_result_final_mcd"
+USING gist (geom_obligations_bati); 
+COMMIT;
+
+CREATE INDEX 
+ON  "AA_old50m_resultat"."26xxx_result_final_mcd"
+USING gist (geom_obligations_lineaires); 
+COMMIT;
+
+CREATE INDEX 
+ON  "AA_old50m_resultat"."26xxx_result_final_mcd"
+USING gist (geom_obligations_elec); 
 COMMIT;
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -87,8 +106,7 @@ COMMIT;
 
 ALTER TABLE  "AA_old50m_resultat"."26xxx_result_final_temp"
 ADD COLUMN obl_nom TEXT, --- nom de l'obligé 
-ADD COLUMN id_bati INT,  --- identifiant de la construction à l'origine du débroussaillement
-ADD COLUMN obl_id_adresse VARCHAR;  --- identifiant de l'adresse de l'obligé 
+ADD COLUMN id_bati INT;  --- identifiant de la construction à l'origine du débroussaillement
 
 UPDATE  "AA_old50m_resultat"."26xxx_result_final_temp" as a
 SET obl_nom = b.proprietaire --- nom de l'obligé 
@@ -100,8 +118,8 @@ where a.obl_comptcom = b.comptecommunal;
 --- Insertion de la table temporaire dans la table finale conforme au format du standard régional PACA ---
 ----------------------------------------------------------------------------------------------------------
 
-insert into "AA_old50m_resultat"."26xxx_result_final_mcd"(geom,comptcom_prop,nom_prop,obl_comptcom,obl_nom,obl_id_adresse,geo_parcelle,id_bati)
-select geom,comptcom_prop,nom_prop,obl_comptcom,obl_nom,obl_id_adresse,geo_parcelle,id_bati
+insert into "AA_old50m_resultat"."26xxx_result_final_mcd"(obl_comptcom,obl_nom,nom_prop,comptcom_prop,geom_obligations_bati,geo_parcel)
+select obl_comptcom,obl_nom,nom_prop,comptcom_prop,geom,geo_parcelle
 from  "AA_old50m_resultat"."26xxx_result_final_temp";
 COMMIT;
 
@@ -112,8 +130,8 @@ COMMIT;
 
 Update "AA_old50m_resultat"."26xxx_result_final_mcd" as a
 set situation = case 
-when st_within(a.geom,b.geom) then 'dans la zone U'
-when st_disjoint(a.geom,b.geom) then 'en dehors de la zone U'
+when st_within(a.geom_obligations_bati,b.geom) then 'dans la zone U'
+when st_disjoint(a.geom_obligations_bati,b.geom) then 'en dehors de la zone U'
 else 'chevauchant une zone U' end 
 from  "AA_old50m_resultat"."AA_zonage_global" as b; --- source : zonage du PLU
 COMMIT;
@@ -122,9 +140,12 @@ COMMIT;
 --- Calcul de la surface des zones à débroussailler  ---
 --------------------------------------------------------
 
+ALTER TABLE "AA_old50m_resultat"."26xxx_result_final_mcd"
+ADD COLUMN surface_m2 INT;
+
 Update "AA_old50m_resultat"."26xxx_result_final_mcd" as a
-set surface_m2 = case when a.geom is not null then st_area(a.geom)
-else st_area(a.geom)
+set surface_m2 = case when a.geom_obligations_bati is not null then st_area(a.geom_obligations_bati)
+else st_area(a.geom_obligations_bati)
 end ; 
 COMMIT;
 
@@ -168,12 +189,22 @@ END
 );
 COMMIT;
 
+------------------------------------------------------------
+--- Identifiant de l'OLD						 ---
+------------------------------------------------------------
+
+UPDATE "AA_old50m_resultat"."26xxx_result_final_mcd"
+SET id_old = concat(geo_parcel,'bat',fid_old);
+COMMIT; 
+
+
+
 ---------------------------------------------------------------------
 --- Suppression de la table intermédiaire et des géométries vides ---
 ---------------------------------------------------------------------
 
 DELETE FROM "AA_old50m_resultat"."26xxx_result_final_mcd"
-WHERE ST_IsEmpty(geom) or surface_m2 = 0; 
+WHERE ST_IsEmpty(geom_obligations_bati) or surface_m2 = 0; 
 COMMIT;
 
 DROP TABLE IF EXISTS  "AA_old50m_resultat"."26xxx_result_final_temp";

@@ -22,15 +22,17 @@ Dans le contexte actuel d'intensification des feux et de la propagation du risqu
 Les outils mis à disposition dans ce dépôt permettent d'enrichir les [résultats de l'outil OLD50m](https://gitlab-forge.din.developpement-durable.gouv.fr/pub/dd/ddt-26-public/old50m) afin de monter une base de données des débroussaillements  : 
 : 
 
-	
 * 📂 1_post_traitement 
 	* 1_script_wold50m2mcd.sql : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Commune par commune.
 	* 1_script_wold50m2mcd.py : Adaptation les tables produites par l'outil OLD50m au format établi par le modèle de données. Automatisation sur plusieurs communes.
 	* 2_script_adresse.sql : Ajouter l'adresse de l'obligé 
 	* 3_script_GL.sql : Modélisation des OLD générées par les voies férrées et les infrastructure de transport d'éléctricité
 	* 4_script_routes.sql : Modélisation des OLD générées par les voies ouvertes à la circulation publique
-	* gestionnaire_gl.csv : Fichier-type listant les gestionnaires de grands linéaires mis à disposition par le CRIGE PACA. Peut être utilisé pour le montage de la base de données.
-	
+	* update gestionnaire.sql : Script de mise à jour des gestionnaires des réseaux routiers en fonction de la BD TOPO 
+	* gestionnaire.gpkg : Fichier-type listant les gestionnaires de grands linéaires mis à disposition par le CRIGE PACA. Peut être utilisé pour le montage de la base de données.
+
+Un modèle de données type est disponible ici pour monter une base de données OLD : 
+
 * 📂 2_MCD 
 	* MCD_OLD.pdf : Proposition de MCD
 	
@@ -38,7 +40,6 @@ Les outils mis à disposition dans ce dépôt permettent d'enrichir les [résult
 
 - [BD_TOPO](https://geoservices.ign.fr/bdtopo#telechargementgpkgdep) (format .gpkg) avec les couches 
 	- batiments 
-	- batiment_rnb_lien_bdtopo
 	- troncon_de_route
 	- troncon_de_voie_ferre  
 	- Lignes électriques aériennes Haute Tension (HTB)
