@@ -45,7 +45,7 @@ Un modèle de données type est disponible ici pour monter une base de données 
 	- Lignes électriques aériennes Haute Tension (HTB)
 - [BAN PLUS](https://geoservices.ign.fr/ban-plus) avec les couches
 	- adresse
-	- lien_bati-parcelle
+	- lien_adresse-parcelle
 - [Fichiers fonciers MAJIC](https://www.crige-paca.org/services/extractions/) (⚠️ réservé aux ayant droit)
 - [Zonage OLD](https://geoservices.ign.fr/debroussaillement)
 - [Documents d'urbanisme](https://www.geoportail-urbanisme.gouv.fr/map/#tile=1&lon=2.424722&lat=46.76305599999998&zoom=6)
