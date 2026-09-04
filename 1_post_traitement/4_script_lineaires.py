@@ -12,7 +12,7 @@ from sqlalchemy import create_engine, text
 # CONFIGURATION DU CONTEXTE DEPARTEMENTAL (DRÔME)
 # =============================================================================
 
-DEPT = '13'
+DEPT = 'XX'
 
 # Schemas
 SCHEMA_BDTOPO   = 'r_bdtopo'
@@ -45,6 +45,7 @@ DB_CONFIG = {
     "user": "nom_utilisateur",
     "password": "mdp_utilisateur"
 }
+
 
 # =============================================================================
 # INITIALISATION DU MOTEUR ET DES LOGS
@@ -148,46 +149,6 @@ def fmt(t):  # transforme une durée au format hh:mm:ss
 # =============================================================================
 
 MODULE_SQL = """
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-------------------------------------- 🚆🚗 LINEAIRES 🚗🚆 ----------------------------------------------------------------
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
---- Identifier les obligations légales de débroussaillement (OLD) générées par les voies                       ---
---- de transport ouvertes à la circulation publique et les voies férrées.    					                                   --- 
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
---- Auteurs : CRIGE PACA, Communes forestières PACA                                                ---                    
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-
-
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
------------------------------------------ Données nécéssaires ----------------------------------------------------------------------------------------
---- Tronçons de routes de la BD TOPO renommé r_bdtopo.troncon_de_route																			  ----											  ----
---- Tronçons de voies ferrées de la BD TOPO renommé r_bdtopo.troncon_de_voie_ferree 															  -----
---- Tables gestionnaires public.gestionnaires (voir la table d'exemple disponible Github) 														  -----
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
-
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-----   INTEGRATION DU CODE INSEE DU DEPARTEMENT CONCERNEE                                                     ----
-----                                                                                                          ----
-----   Remplacer 83XXX   avec le code INSEE de la commune                                                       ----
-----   Remplacer XXX par les 3 dernier chiffres du code commune
-----   Remplacer AA par le code INSEE du département
-----                                                                                                       ----
-----   Exemple pour le département du VAR dont le code INSEE est 83                                           ----
-----   Rechercher - remplacer "83XXX" par "83" (CTRL+f)                                                          ----
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-                            
---*------------------------------------------------------------------------------------------------------------*--
------------------------------------------------------
---- Création du schéma et restart ---
------------------------------------------------------
 
 DROP SCHEMA IF EXISTS "{schema_travail}" CASCADE;
 CREATE SCHEMA "{schema_travail}";
@@ -200,10 +161,6 @@ COMMIT;
 DELETE FROM "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"
 WHERE id_vf IS NOT NULL; 
 COMMIT;
-
---*------------------------------------------------------------------------------------------------------------*--
-
---- Table routes ---
 
 ALTER TABLE "{SCHEMA_BDTOPO}".troncon_de_route
 ADD COLUMN IF NOT EXISTS id_zonage INTEGER; 
@@ -271,9 +228,6 @@ COMMIT;
 
 
 
---*------------------------------------------------------------------------------------------------------------*--
-
---- Table voies_ferees ---
 
 ALTER TABLE "{SCHEMA_BDTOPO}".troncon_de_voie_ferree
 ADD COLUMN IF NOT EXISTS id_gest INT,
@@ -336,21 +290,6 @@ COMMIT;
 CREATE INDEX ON "{schema_travail}"."{insee}_voies_ferees" USING GIST (geom); 
 COMMIT;
 
-
---*------------------------------------------------------------------------------------------------------------*--
-------------------------------------------------------------------------------------
---- II. Modélisation des Obligations 									   	     --- 
-------------------------------------------------------------------------------------
---- Résumé : la modélisation des OLD se déroule en 3 étapes : 					 ---														 
---- 1. Zone tampon de x m + largeur de la chaussée autour des tronçons de routes ---
---- 2. Découpage des OLD à l'intérieur du zonage OLD 							 ---
---- 3. Intersection du cadastre     										     ---
-------------------------------------------------------------------------------------
---*------------------------------------------------------------------------------------------------------------*--
-
---*------------------------------------------------------------------------------------------------------------*--
---- Table obligations_routes ---
-
 UPDATE "{schema_travail}".routes
 SET nombre_de_voies = case when nombre_de_voies < 1 or nombre_de_voies is null then 1 else nombre_de_voies end,
 largeur_de_chaussee = case when largeur_de_chaussee < 1 or largeur_de_chaussee is null then 1 else largeur_de_chaussee end; 
@@ -406,15 +345,6 @@ from "{schema_travail}".old_route_temp2;
 COMMIT;
 
 
---*------------------------------------------------------------------------------------------------------------*--
-
---*------------------------------------------------------------------------------------------------------------*--
---- Table obligations_vf ---
-
-
---*------------------------------------------------------------------------------------------------------------*--
---- Voies férrées ---
-
 DROP TABLE IF EXISTS "{schema_travail}".bd_foret;
 CREATE TABLE "{schema_travail}".bd_foret as 
 SELECT a.*
@@ -427,7 +357,7 @@ COMMIT;
 
 drop table if exists "{schema_travail}".bd_foretrgr;
 create table "{schema_travail}".bd_foretrgr as 
-select ST_Union(a.geom) as geom
+select ST_intersection(a.geom,b.geom) as geom	
 from  "{schema_travail}".bd_foret as a, "{SCHEMA_PUBLIC}".old200m as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
@@ -438,7 +368,7 @@ COMMIT;
 drop table if exists "{schema_travail}".bd_foret20m;
 create table  "{schema_travail}".bd_foret20m as 
 select st_union(st_buffer(a.geom,20)) as geom
-from  "{schema_travail}".bd_foret as a, "{SCHEMA_PUBLIC}".old200m as b
+from  "{schema_travail}".bd_foretrgr as a, "{SCHEMA_PUBLIC}".old200m as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
@@ -481,25 +411,6 @@ where st_intersects(a.geom,b.geom);
 COMMIT;
 
 
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
---- II. Aggrégation des obligations								   	     						   	   --- 
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
---------------------------------------------------------------------------------------------------------------------------------------------
---- Résumé : la modélisation des OLD se déroule en 3 grandes étapes (II-a) : 															---														 
---- 1. Insertion des OLD générées par les routes dans la table   "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"							---
---- 2. Insertion des OLD générées par les voies férrées dans la table 	 "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"			        ---
---------------------------------------------------------------------------------------------------------------------------------------------
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-
---*------------------------------------------------------------------------------------------------------------*--
---- Routes ---
-
 INSERT INTO "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"(nom_prop,comptcom_prop,geom_obligations_lineaires,id_troncon,geo_parcel)
 SELECT nom_prop,comptcom_prop,geom,id_troncon,geo_parcelle
 FROM "{schema_travail}"."{insee}_obligations_routes";
@@ -525,8 +436,6 @@ surface_m2 = st_area(geom_obligations_lineaires)
 WHERE id_troncon IS NOT NULL;
 COMMIT;
 
---*------------------------------------------------------------------------------------------------------------*--
---- Voies férrées ---
 
 INSERT INTO "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"(nom_prop,comptcom_prop,geom_obligations_lineaires,id_vf,geo_parcel)
 SELECT nom_prop,comptcom_prop,geom,id_vf,geo_parcelle
@@ -553,21 +462,6 @@ surface_m2 = st_area(geom_obligations_lineaires)
 WHERE id_vf IS NOT NULL;
 COMMIT;
 
---*------------------------------------------------------------------------------------------------------------*--
-
-
---*-----------------------------------------------------------------------------------------------------------*--
---*-----------------------------------------------------------------------------------------------------------*--
-----                                 NETTOYAGE DU SCHÉMA DE TRAVAIL                                          ----
-----                          (décommenter si suppression souhaitée)                                         ----
---*-----------------------------------------------------------------------------------------------------------*--
--- Description : Suppression complète du schéma de travail et de TOUTES ses tables (CASCADE).                ----
---               ATTENTION : Opération IRRÉVERSIBLE. À n''exécuter QUE si :                                  ----
---               • La table finale a été vérifiée et validée                                                 ----
---               • Les exports nécessaires ont été réalisés                                                  ----
---               • Aucun besoin de traçabilité/debug des tables intermédiaires                               ----
---               Libère l''espace disque occupé par les tables temporaires de calcul.                        ----
---*-----------------------------------------------------------------------------------------------------------*--
 
 DROP SCHEMA "{schema_travail}" CASCADE;
 COMMIT;

@@ -370,18 +370,20 @@ COMMIT;
 --*------------------------------------------------------------------------------------------------------------*--
 --- Table "83XXX_lineaires".bd_foretrgr ---
 --*------------------------------------------------------------------------------------------------------------*--
---- Aggrégation des patchs forestier BD_foret sur l'emprise des zonage informatif des OLD (ref : public.old200m) ---
+--- Intersection des patchs forestier BD_foret sur l'emprise des zonage informatif des OLD (ref : public.old200m) ---
+--- A supprimer si on veut calculer les OLD pour les voies férrées situées à 20m de toutes les forêts 			  ---
 --*------------------------------------------------------------------------------------------------------------*--
 
 drop table if exists "83XXX_lineaires".bd_foretrgr;
 create table "83XXX_lineaires".bd_foretrgr as 
-select ST_Union(a.geom) as geom									--- Union des géométries 
+select ST_intersection(a.geom,b.geom) as geom									--- Intersection des géométries 
 from  "83XXX_lineaires".bd_foret as a, public.old200m as b
-where st_intersects(a.geom,b.geom);								--- Là où la bd_foret intersecte le zonage informatif des OLD 
+where st_intersects(a.geom,b.geom);												--- Là où la bd_foret intersecte le zonage informatif des OLD 
 COMMIT;
 
 CREATE INDEX ON "83XXX_lineaires".bd_foretrgr USING GIST (geom);
 COMMIT;
+
 
 --*------------------------------------------------------------------------------------------------------------*--
 --- Table "83XXX_lineaires".bd_foret20m ---
@@ -392,7 +394,7 @@ COMMIT;
 drop table if exists "83XXX_lineaires".bd_foret20m;
 create table  "83XXX_lineaires".bd_foret20m as 
 select st_union(st_buffer(a.geom,20)) as geom
-from  "83XXX_lineaires".bd_foret as a, public.old200m as b
+from  "83XXX_lineaires".bd_foretrgr as a, public.old200m as b
 where st_intersects(a.geom,b.geom);
 COMMIT;
 

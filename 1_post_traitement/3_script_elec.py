@@ -12,7 +12,7 @@ from sqlalchemy import create_engine, text
 # CONFIGURATION DU CONTEXTE DEPARTEMENTAL (DRÔME)
 # =============================================================================
 
-DEPT = '13'
+DEPT = 'XX'
 
 # Schemas
 SCHEMA_BDTOPO   = 'r_bdtopo'
@@ -155,45 +155,7 @@ def fmt(t):  # transforme une durée au format hh:mm:ss
 
 MODULE_SQL = """
 
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-------------------------------------- ⚡ LIGNES ELECTRIQUES ⚡ -------------------------------------
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
---- Identifier les obligations légales de débroussaillement (OLD) générées par les infrastrutures  ---
---- de transport d'éléctricité les gestionnaires chargés de leur exécution.	   ---
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
---- Auteurs : CRIGE PACA, Communes forestières PACA                                                ---                    
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
 
-
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
------------------------------------------ Données nécéssaires ----------------------------------------------------------------------------------------
---- Lignes électriques aériennes Basse Tension (BT) téléchargeable sur le site de l'Agence ORE renommé "r_bdtopo"."reseau-aerien-basse-tension-bt"       ---
---- Lignes électriques aériennes moyenne tension (HTA) téléchargeable sur le site de l'Agence ORE renommé "r_bdtopo"."reseau-aerien-moyenne-tension-hta" ---
---- Lignes électriques aériennes haute tension (HT) disponibles sur la BT TOPO renommé "r_bdtopo"."reseau-aerien-haute-tension-ht"				  ----
---- Contours forestiers de la BD Foret téléchargeable sur le site de l'IGN "r_bdtopo"."bd_foret"												  ----
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-----   INTEGRATION DU CODE INSEE DU DEPARTEMENT CONCERNEE                                                     ----
-----                                                                                                          ----
-----   Remplacer 83XXX   avec le code INSEE de la commune                                                       ----
-----   Remplacer XXX par les 3 dernier chiffres du code commune
-----   Remplacer AA par le code INSEE du département
-----                                                                                                       ----
-----   Exemple pour le département du VAR dont le code INSEE est 83                                           ----
-----   Rechercher - remplacer "83XXX" par "83" (CTRL+f)                                                          ----
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-
------------------------------------------------------
---- Création du schéma et restart			      ---
------------------------------------------------------
 
 DROP SCHEMA IF EXISTS "{schema_travail}" CASCADE;
 CREATE SCHEMA "{schema_travail}";
@@ -208,16 +170,6 @@ COMMIT;
 DELETE FROM "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"
 WHERE id_ligne_elec IS NOT NULL; 
 COMMIT;
-
---*------------------------------------------------------------------------------------------------------------*--
---- Montage de la base de données -----------------------------------------
-------------------------------------------------------------------------------
---- Résumé : Création des tables de la base de données (voir MCD)          ---
-------------------------------------------------------------------------------
-
---*------------------------------------------------------------------------------------------------------------*--
-
---- Table lignes electriques ---
 
 ALTER TABLE  "{SCHEMA_BDTOPO}"."reseau-aerien-haute-tension-ht"
 ALTER COLUMN geom
@@ -339,34 +291,6 @@ COMMIT;
 CREATE INDEX ON "{schema_travail}"."{insee}_ligne_electrique" USING GIST (geom);
 COMMIT;
 
-
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
---- II. Modélisation des Obligations 									   	     						   	   --- 
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-
---- Résumé : la modélisation des OLD se déroule en 3 grandes étapes (II-a) : 		---														 
---- 1. Modélisation des OLD générées par les electriques : 							---
----		- Zone tampon de x m autour des lignes electriques 							---
----		- Découpage des OLD à l'intérieur du zonage OLD 						 	---
----		- Intersection avec le cadastre 										 	---
---- 2. Modélisation des OLD générées par les voies férrées (II-b) : 				---
----		-Zone tampon de x m + largeur de la voie autour des lignes de chemin de fer ---
----		- Découpage des OLD à l'intérieur du zonage OLD 						    ---
----		- Intersection avec le cadastre 											---
---- 3. Aggrégation des deux couches OLD (II-c)     								    ---
----------------------------------------------------------------------------------------
---*------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------*--
-
-
---*------------------------------------------------------------------------------------------------------------*--
---- Lignes electriques ---
-
 DROP TABLE IF EXISTS "{schema_travail}".bd_foret;
 CREATE TABLE "{schema_travail}".bd_foret as 
 SELECT a.*
@@ -422,25 +346,23 @@ from "{schema_travail}".rte_ligne_temp1 as a,  "{SCHEMA_CADASTRE}".parcelle_info
 where st_intersects(a.geom,b.geom);
 COMMIT;
 
---*------------------------------------------------------------------------------------------------------------*--
---- Aggrégation des OLD ---
 
-INSERT INTO "AA_old50m_resultat"."{insee}_result_final_mcd"(nom_prop,comptcom_prop,geom_obligations_elec,id_ligne_elec,geo_parcel)
+INSERT INTO "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"(nom_prop,comptcom_prop,geom_obligations_elec,id_ligne_elec,geo_parcel)
 SELECT nom_prop,comptcom_prop,geom,id_ligne_elec,geo_parcelle
 FROM "{schema_travail}".rte_ligne2_temp; 
 COMMIT;
 
-ALTER TABLE "AA_old50m_resultat"."{insee}_result_final_mcd" 
+ALTER TABLE "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd" 
 ADD COLUMN IF NOT EXISTS id_gest INT; 
 COMMIT;
 
-UPDATE "AA_old50m_resultat"."{insee}_result_final_mcd" as a 
+UPDATE "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd" as a 
 SET id_gest = b.id_gest
 FROM "{schema_travail}"."{insee}_ligne_electrique"  as b
 WHERE a.id_ligne_elec = b.id_ligne_elec;
 COMMIT;
 
-UPDATE "AA_old50m_resultat"."{insee}_result_final_mcd" as a 
+UPDATE "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd" as a 
 SET obl_nom = b.nom_gest,
 obl_statut = b.statut,
 obl_adresse = b.adresse
@@ -448,24 +370,11 @@ FROM "{SCHEMA_PUBLIC}".gestionnaires as b
 WHERE a.id_gest = b.id_gest;
 COMMIT;
 
-UPDATE "AA_old50m_resultat"."{insee}_result_final_mcd"
+UPDATE "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"
 SET id_old = concat(id_gest,'elec',fid_old),
 surface_m2 = st_area(geom_obligations_elec)
 WHERE id_ligne_elec IS NOT NULL;
 COMMIT;
-
---*-----------------------------------------------------------------------------------------------------------*--
---*-----------------------------------------------------------------------------------------------------------*--
-----                                 NETTOYAGE DU SCHÉMA DE TRAVAIL                                          ----
-----                          (décommenter si suppression souhaitée)                                         ----
---*-----------------------------------------------------------------------------------------------------------*--
--- Description : Suppression complète du schéma de travail et de TOUTES ses tables (CASCADE).                ----
---               ATTENTION : Opération IRRÉVERSIBLE. À n''exécuter QUE si :                                  ----
---               • La table finale a été vérifiée et validée                                                 ----
---               • Les exports nécessaires ont été réalisés                                                  ----
---               • Aucun besoin de traçabilité/debug des tables intermédiaires                               ----
---               Libère l''espace disque occupé par les tables temporaires de calcul.                        ----
---*-----------------------------------------------------------------------------------------------------------*--
 
 DROP SCHEMA "{schema_travail}" CASCADE;
 COMMIT;

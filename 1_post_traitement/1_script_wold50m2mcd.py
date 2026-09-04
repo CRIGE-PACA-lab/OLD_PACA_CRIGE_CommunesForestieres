@@ -45,6 +45,7 @@ DB_CONFIG = {
 }
 
 
+
 # =============================================================================
 # INITIALISATION DU MOTEUR ET DES LOGS
 # =============================================================================
@@ -55,7 +56,7 @@ engine = create_engine(
     future=True
 )
 
-LOG_FILE = r"C:\Users\NomUtilisateur\Documents\WOLD50M\log\log_outil_old50m.log"
+LOG_FILE = r"D:\projet_OLD\OLD_PACA_CRIGE_CommunesForestieres\log\log_outil_old50m2mcd.log"
 logging.basicConfig(
     filename=LOG_FILE, level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
@@ -77,9 +78,10 @@ def get_communes(limit=None):
         ON ST_Intersects(c.geom, o.geom)  -- Toutes les communes qui touchent
         WHERE 
             -- Filtrer pour garder seulement celles significativement impactées
-            ST_Area(ST_Intersection(c.geom, o.geom)) / ST_Area(c.geom) > 0.01
+            -- ST_Area(ST_Intersection(c.geom, o.geom)) / ST_Area(c.geom) > 0.01
             -- ou un seuil absolu en m²
             -- ST_Area(ST_Intersection(c.geom, o.geom)) > 5000
+			c.lot = '2'
         ORDER BY c.idu
     """
     if limit:
@@ -94,7 +96,7 @@ def prepare_sql_for_commune(raw_sql, insee, idu):
     context = {
         'insee': f"{DEPT}{idu}",
         'idu': idu,
-        'code_commune': f"{DEPT}0{idu}",
+        'code_commune': f"{DEPT}2{idu}",
         'schema_travail': f"{insee}_wold50m",
         
           # Schemas globaux
@@ -140,28 +142,7 @@ def execute_module(insee, idu, tex2, sql_template):
 # =============================================================================
 
 MODULE_SQL = """
---------------------------------------------------
------------------ OLD50m2MCD_PACA ----------------
--------------------------------------------------- 
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- Ce script permet d'adapter les tables produites par l'outil OLD50m au format établi par le modèle de données issu du GT OLD animé par le CRIGE PACA et l'URCOFOR ---
---- Traitements sous PostgreSQL/PostGIS 																															 ---
---- Documentation de l'outil OLD50m : https://gitlab-forge.din.developpement-durable.gouv.fr/frederic.sarret/old_50m/ 												 ---	
---- Modèle de données OLD : https://github.com/CRIGE-PACA-lab/OLD_PACA_CRIGE_CommunesForestieres 																	 ---
-----  Auteurs : Luc Mabire, 																						                                                 ---
-----  Version : 1.00                                                                                 																 ---
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------																	
-
-------------------------------------------------------------------------------------------------------------------
-----   Remplacer "26xxx" par le code INSEE de la commune                                                      ----
-----   Remplacer "XXX" par les 3 derniers chiffres de ce code INSEE         								  ----
----    Remplacer "AA" par le code INSEE du département      	              ----
-------------------------------------------------------------------------------------------------------------------
-
-----------------------------------------------
---- Création des index en amont et restart ---
------------------------------------------------
 
 CREATE INDEX 
 ON  {SCHEMA_CADASTRE}.parcelle_info
@@ -173,29 +154,26 @@ ON  {SCHEMA_CADASTRE}.geo_commune
 USING gist (geom); 
 COMMIT;
 
----------------------------------------------------------------
---- Création d'une table vide conforme au standard régional ---
----------------------------------------------------------------
 
 Drop table if exists "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd";
 CREATE TABLE  "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"(
-   fid_old SERIAL, --- Identifiant de l'objet, en série
-   id_old VARCHAR(50), --- Concaténation du compte communal de l'obligé ou de l'identifiant de gestionnaire et du numéro de parcelle de l'OLD 
-   situation VARCHAR(50), --- Situation de l'obligation au regarde de la reglementation spécifique liée aux zones U du PLU.
-   obl_comptcom VARCHAR(50), --- Compte de propriété de l'obligé
-   obl_nom TEXT, --- Nom de la personne (morale ou physique) responsable de l'exécution de l'obligation.
-   obl_statut VARCHAR(50), --- statut de la personne (morale ou physique) responsable de l'exécution de l'obligation.
-   nom_prop TEXT, --- Nom de la personne (morale ou physique) chez qui l'obligation doit être exécutée.
-   comptcom_prop VARCHAR(50), --- Compte de propriété du propriétaire de la parcelle
-   geom_obligations_bati GEOMETRY, --- Surfaces à débroussailler par un seul et unique obligé autour d'une construction
-   geom_obligations_lineaires GEOMETRY, --- Surfaces à débroussailler par un seul et unique obligé autour d'une route ou d'une voie de chemin de fer
-   geom_obligations_elec GEOMETRY, --- Surfaces à débroussailler par un seul et unique obligé autour des infrastrcutures des réseaux de transport et distribution d'éléctricité
-   id_troncon INTEGER, --- Identifiant unique du tronçon de route
-   id_vf INTEGER, --- Identifiant unique du tronçon de voie férrée
-   id_ligne_elec INTEGER, --- Identifiant unique du tronçon de ligne electrique
-   id_zone INTEGER, --- Identifiant de la zone U (facultatif)
-   ID_bati INTEGER, --- Identifiant unique du batiment causant l'OLD
-   geo_parcel VARCHAR(50), --- Identifiant unique de la parcelle à débroussailler
+   fid_old SERIAL, 
+   id_old VARCHAR(50), 
+   situation VARCHAR(50), 
+   obl_comptcom VARCHAR(50), 
+   obl_nom TEXT, 
+   obl_statut VARCHAR(50),
+   nom_prop TEXT, 
+   comptcom_prop VARCHAR(50),
+   geom_obligations_bati GEOMETRY,
+   geom_obligations_lineaires GEOMETRY, 
+   geom_obligations_elec GEOMETRY, 
+   id_troncon INTEGER,
+   id_vf INTEGER,
+   id_ligne_elec INTEGER, 
+   id_zone INTEGER, 
+   ID_bati INTEGER, 
+   geo_parcel VARCHAR(50), 
    PRIMARY KEY(fid_old)
 );
 COMMIT;
@@ -215,23 +193,20 @@ ON  "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"
 USING gist (geom_obligations_elec); 
 COMMIT;
 
------------------------------------------------------------------------------------------------------------------------------------------------------
---- Intersection des résultats de l'outil OLD_50m avec le cadastre pour remonter les informations du propriétaire de la parcelle à débroussailler ---
---- Création d'une table temporaire 																											  ---
------------------------------------------------------------------------------------------------------------------------------------------------------
 
-DROP TABLE IF EXISTS  "{SCHEMA_RESULTAT}"."{insee}_result_final_temp"; --- table temporaire
+
+DROP TABLE IF EXISTS  "{SCHEMA_RESULTAT}"."{insee}_result_final_temp"; 
 CREATE TABLE  "{SCHEMA_RESULTAT}"."{insee}_result_final_temp" AS
-select a.comptecommunal as obl_comptcom,  --- compte communal de l'obligé
-b.comptecommunal as comptcom_prop, --- compte communal du propriétaire de la parcelle à débroussailler
-b.proprietaire as nom_prop, --- nom du propriétaire de la parcelle à débroussailler
-b.geo_parcelle, --- parcelle à débroussailler
-  ST_Multi(                             -- Convertit en MultiPolygon
-           ST_CollectionExtract(             -- Extrait uniquement les polygones (type 3)
-               ST_MakeValid(                 -- Corrige les géométries invalides
-                   ST_intersection(a.geom,b.geom)),      -- intersecte les géométries 
-       3)) AS geom                           -- Géométrie finale 
-from  "{SCHEMA_RESULTAT}"."{insee}_result_final" as a join {SCHEMA_CADASTRE}.parcelle_info as b --- sources : résultats de OLD50m ; cadastre
+select a.comptecommunal as obl_comptcom,  
+b.comptecommunal as comptcom_prop, 
+b.proprietaire as nom_prop, 
+b.geo_parcelle,
+  ST_Multi(                             
+           ST_CollectionExtract(             
+               ST_MakeValid(                 
+                   ST_intersection(a.geom,b.geom)),     
+       3)) AS geom                           
+from  "{SCHEMA_RESULTAT}"."{insee}_result_final" as a join {SCHEMA_CADASTRE}.parcelle_info as b 
 on st_intersects(a.geom, b.geom)
 where b.codecommune = right('{insee}',3);
 COMMIT;
@@ -241,46 +216,35 @@ ON  "{SCHEMA_RESULTAT}"."{insee}_result_final_temp"
 USING gist (geom); 
 COMMIT;
 
-----------------------------------------------------------------------
---- Remontée des informations cadastrales du débroussailleur       ---
---- Jointure des tables "cadastre" et "bati" à la table temporaire ---
-----------------------------------------------------------------------
+
 
 ALTER TABLE  "{SCHEMA_RESULTAT}"."{insee}_result_final_temp"
-ADD COLUMN obl_nom TEXT, --- nom de l'obligé 
-ADD COLUMN id_bati INT;  --- identifiant de la construction à l'origine du débroussaillement
+ADD COLUMN obl_nom TEXT, 
+ADD COLUMN id_bati INT;  
 
 UPDATE  "{SCHEMA_RESULTAT}"."{insee}_result_final_temp" as a
-SET obl_nom = b.proprietaire --- nom de l'obligé 
-from {SCHEMA_CADASTRE}.parcelle_info as b --- source : cadastre
+SET obl_nom = b.proprietaire 
+from {SCHEMA_CADASTRE}.parcelle_info as b 
 where a.obl_comptcom = b.comptecommunal;  
 
 
-----------------------------------------------------------------------------------------------------------
---- Insertion de la table temporaire dans la table finale conforme au format du standard régional PACA ---
-----------------------------------------------------------------------------------------------------------
 
 insert into "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"(obl_comptcom,obl_nom,nom_prop,comptcom_prop,geom_obligations_bati,geo_parcel)
 select obl_comptcom,obl_nom,nom_prop,comptcom_prop,geom,geo_parcelle
 from  "{SCHEMA_RESULTAT}"."{insee}_result_final_temp";
 COMMIT;
 
------------------------------------------------------------------------------
---- Définition de la situation de l'OLD au regard du document d'urbanisme ---
---- Facultatif si la commune n'est pas couverte par un PLU 				  ---
------------------------------------------------------------------------------
+
 
 Update "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd" as a
 set situation = case 
 when st_within(a.geom_obligations_bati,b.geom) then 'dans la zone U'
 when st_disjoint(a.geom_obligations_bati,b.geom) then 'en dehors de la zone U'
 else 'chevauchant une zone U' end 
-from  "{SCHEMA_RESULTAT}"."AA_zonage_global" as b; --- source : zonage du PLU
+from  "{SCHEMA_RESULTAT}"."{TABLE_ZONAGE}" as b; 
 COMMIT;
 
---------------------------------------------------------
---- Calcul de la surface des zones à débroussailler  ---
---------------------------------------------------------
+
 
 ALTER TABLE "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"
 ADD COLUMN surface_m2 INT;
@@ -291,10 +255,6 @@ else st_area(a.geom_obligations_bati)
 end ; 
 COMMIT;
 
-------------------------------------------------------------
---- Statut juridique de l'obligé 						 ---
---- Reclassification adaptables aux spécificités locales ---
-------------------------------------------------------------
 
 UPDATE "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"
 SET obl_statut = (
@@ -331,9 +291,7 @@ END
 );
 COMMIT;
 
-------------------------------------------------------------
---- Identifiant de l'OLD						 ---
-------------------------------------------------------------
+
 
 UPDATE "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"
 SET id_old = concat(geo_parcel,'bat',fid_old);
@@ -341,9 +299,7 @@ COMMIT;
 
 
 
----------------------------------------------------------------------
---- Suppression de la table intermédiaire et des géométries vides ---
----------------------------------------------------------------------
+
 
 DELETE FROM "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"
 WHERE ST_IsEmpty(geom_obligations_bati) or surface_m2 = 0; 

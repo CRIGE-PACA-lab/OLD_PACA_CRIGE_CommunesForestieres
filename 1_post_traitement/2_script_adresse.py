@@ -12,7 +12,7 @@ from sqlalchemy import create_engine, text
 # CONFIGURATION DU CONTEXTE DEPARTEMENTAL (DRÔME)
 # =============================================================================
 
-DEPT = '13'
+DEPT = 'XX'
 
 # Schemas
 SCHEMA_BDTOPO   = 'r_bdtopo'
@@ -44,6 +44,7 @@ DB_CONFIG = {
     "user": "nom_utilisateur",
     "password": "mdp_utilisateur"
 }
+
 
 # =============================================================================
 # INITIALISATION DU MOTEUR ET DES LOGS
@@ -149,67 +150,31 @@ def fmt(t):  # transforme une durée au format hh:mm:ss
 
 MODULE_SQL = """
 
--------------------------------------------------------------
------------------ OLD50m2MCD_PACA - Adresses ----------------
--------------------------------------------------------------
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- Ce script permet d'ajouter les adresses aux résultats de l'outil OLD50m après formatage selon le modèle de données.												 ---
---- Traitements sous PostgreSQL/PostGIS 																															 ---
---- Documentation de l'outil OLD50m : https://gitlab-forge.din.developpement-durable.gouv.fr/frederic.sarret/old_50m/ 												 ---	
---- Modèle de données OLD : https://github.com/CRIGE-PACA-lab/OLD_PACA_CRIGE_CommunesForestieres 																	 ---
-----  Auteurs : CRIGE PACA, Communes forestières PACA    																						                                                 ---
-----  Version : 1.00                                                                                 																 ---
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------																	
-
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
------------------------------------------ DONNEES NECESSAIRES ----------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------------
---- Adresses (points) du produit BANPLUS diffusé par l'IGN     																					   ---
---- Lien Adresses-Parcelle (lignes) du produit BANPLUS diffusé par l'IGN 																		   ---
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
---*------------------------------------------------------------------------------------------------------------------------------------------------*--
-
-------------------------------------------------------------------------------------------------------------------
-----   Remplacer "26xxx" par le code INSEE de la commune                                                      ----
-----   Remplacer "AA" par le code INSEE du Département 
-----   Si cadastre livré en plusieurs lots : pensez à changer la valeur intermédiaire ligne 47.   												  ----
-------------------------------------------------------------------------------------------------------------------
-
---*------------------------------------------------------------------------------------------------------------*--
------------------------------------------------------
---- Création du schéma							  ---
------------------------------------------------------
 
 DROP SCHEMA IF EXISTS  "{schema_travail}" CASCADE;
 CREATE SCHEMA "{schema_travail}";
 COMMIT;
 
---*------------------------------------------------------------------------------------------------------------*--
-
---- Table adresse_parcelle : joiture des tables "parcelles_info" et "lien_bati_parcelle" ---
 
 ALTER TABLE "{SCHEMA_BDTOPO}"."{TABLE_LAP}"
 ADD COLUMN IF NOT EXISTS idu_cadastre VARCHAR; 
 COMMIT;
 
 UPDATE "{SCHEMA_BDTOPO}"."{TABLE_LAP}"
-SET idu_cadastre = concat(left(idu,2),'1',right(idu,12)); --- Valeur intermédiaire à changer par '0','1' ou '2' si plusieurs lots au cadastre.
+SET idu_cadastre = concat(left("IDU",2),'1',right("IDU",12)); 
 COMMIT;
 
 DROP TABLE IF EXISTS "{schema_travail}".adresse_parcelle1; 
 CREATE TABLE "{schema_travail}".adresse_parcelle1 AS 
 SELECT a.geo_parcelle, 
 a.comptecommunal,
-b.id_adr
+b."ID_ADR" as id_adr
 FROM "{SCHEMA_CADASTRE}"."{TABLE_PARCELLE}" as a, "{SCHEMA_BDTOPO}"."{TABLE_LAP}" as b 
 WHERE a.geo_parcelle = b.idu_cadastre; 
 COMMIT;
 
---*------------------------------------------------------------------------------------------------------------*--
 
---- Table adresse_parcelle2 : ajout des points d'adresses ---
 
 
 DROP TABLE IF EXISTS "{schema_travail}".adresse_parcelle2; 
@@ -235,9 +200,7 @@ when numero = '0' or numero = '99999' then null
 else numero end,' ',rep,' ',nom_voie,' ',insee_com,' ',nom_com);
 COMMIT;
 
---*------------------------------------------------------------------------------------------------------------*--
 
---- Insertion de l'adresse dans la table de résultats ---
 
 ALTER TABLE "{SCHEMA_RESULTAT}"."{insee}_result_final_mcd"
 ADD COLUMN IF NOT EXISTS obl_adresse TEXT;
@@ -249,18 +212,6 @@ WHERE a.obl_comptcom = b.comptecommunal;
 COMMIT;
 
 
---*-----------------------------------------------------------------------------------------------------------*--
---*-----------------------------------------------------------------------------------------------------------*--
-----                                 NETTOYAGE DU SCHÉMA DE TRAVAIL                                          ----
-----                          (décommenter si suppression souhaitée)                                         ----
---*-----------------------------------------------------------------------------------------------------------*--
--- Description : Suppression complète du schéma de travail et de TOUTES ses tables (CASCADE).                ----
---               ATTENTION : Opération IRRÉVERSIBLE. À n''exécuter QUE si :                                  ----
---               • La table finale __CODE_INSEE___result_final a été vérifiée et validée                     ----
---               • Les exports nécessaires ont été réalisés                                                  ----
---               • Aucun besoin de traçabilité/debug des tables intermédiaires                               ----
---               Libère l''espace disque occupé par les tables temporaires de calcul.                        ----
---*-----------------------------------------------------------------------------------------------------------*--
 
 DROP SCHEMA "{schema_travail}" CASCADE;
 COMMIT;
